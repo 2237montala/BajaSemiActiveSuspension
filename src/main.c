@@ -36,6 +36,8 @@ int setup() {
   SystemClock_Config();
 
   setupDebugUart(&UartHandle,115200);
+
+  return 0;
 }
 
 int main(void)
@@ -129,7 +131,7 @@ int main(void)
     uint32_t endTime = micros;
 
     
-    printf("20 run PID compute time: %lu us\r\n",(endTime - startTime));    
+    printf("100 run PID compute time: %lu us\r\n",(endTime - startTime));    
 
 
 
