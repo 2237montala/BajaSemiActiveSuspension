@@ -4,7 +4,7 @@
  * CREATE DATE : 12/14/2020
  * DESCRIPTION :
  */
-
+#include "arm_math.h"
 
 #define NUM_SHOCKS 4
 
@@ -64,7 +64,7 @@ struct ShockVelocities {
 
 struct SingleShockData {
     int mostRecentDataIndex;
-    struct ShockSensorData shockRecentData[SHOCK_DATA_BUFFER_LEN];
-    struct ShockVelocities shockVelocities[SHOCK_DATA_BUFFER_LEN];
+    struct ShockSensorData dataBuffer[SHOCK_DATA_BUFFER_LEN];
+    struct ShockVelocities velocities[SHOCK_DATA_BUFFER_LEN];
     float32_t lastPidOut;
 };

@@ -5,6 +5,7 @@
 #include "Delay.h"
 #include "Uart.h"
 #include "targetCommon.h"
+#include "ControlSys.h"
 
 // Include arm math libraies
 #include "arm_math.h"
@@ -136,12 +137,40 @@ int main(void)
 
 
 
+
+
     while(true) {
         BSP_LED_On(LED2);
         delay(500);
         BSP_LED_Off(LED2);
         delay(500);
     }
+}
+
+void appendData(struct ShockSensorData *dataIn, struct ShockControlSystem *shockUnits, int numShocks) {
+
+  for(int i = 0; i < numShocks; i++) {
+      struct ShockControlSystem *currShockController = &shockUnits[i];
+
+      int dataBufIndex = currShockController->shockData.mostRecentDataIndex;
+      if(dataBufIndex >= SHOCK_DATA_BUFFER_LEN) {
+        // If we are at the end of the buffer then we wrap around
+
+      } else {
+        // Save the new sample at next index
+        currShockController->shockData.dataBuffer[dataBufIndex] = dataIn[i];
+
+        // Update the index
+        currShockController->shockData.mostRecentDataIndex++;
+
+      }
+
+
+
+
+  }
+
+
 }
 
 void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *htim) {
