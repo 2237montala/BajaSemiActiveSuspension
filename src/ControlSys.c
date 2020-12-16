@@ -66,7 +66,6 @@ void calculateDampingValues(int numShocks,struct ShockControlSystem *shockUnits,
 
 
 //------------ Helper Function ---------------------------------
-
 static float clamp(float32_t value, float32_t max, float32_t min) {
     if(value > max) {
         return max;
