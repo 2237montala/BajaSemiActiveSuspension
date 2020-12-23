@@ -18,9 +18,18 @@ void createInitialDamperProfiles();
 static void SystemClock_Config(void);
 static void Error_Handler(void);
 static void setupDebugUart(UART_HandleTypeDef *huart, uint32_t buadRate);
+static HAL_StatusTypeDef CAN_Polling(void);
 
 /* UART handler declaration */
 UART_HandleTypeDef UartHandle;
+
+CAN_HandleTypeDef     CanHandle;
+CAN_TxHeaderTypeDef   TxHeader;
+CAN_RxHeaderTypeDef   RxHeader;
+uint8_t               TxData[8];
+uint8_t               RxData[8];
+uint32_t              TxMailbox;
+
 
 /* PID systems for the four shock controllers */
 
@@ -55,26 +64,28 @@ int main(void)
     /* Infinite loop */ 
 
     //__TIM6_CLK_ENABLE();
-    TIM_HandleTypeDef usTimer = {.Instance = TIM6};
-
-    usTimer.Init.Prescaler = 0;
-    usTimer.Init.CounterMode = TIM_COUNTERMODE_UP;
-    usTimer.Init.Period = 176;
-    usTimer.Init.AutoReloadPreload = 0;
-    usTimer.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-    usTimer.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+    // TIM_HandleTypeDef usTimer = {.Instance = TIM6};
 
     // usTimer.Init.Prescaler = 0;
     // usTimer.Init.CounterMode = TIM_COUNTERMODE_UP;
-    // usTimer.Init.Period = 180000;
+    // usTimer.Init.Period = 176;
     // usTimer.Init.AutoReloadPreload = 0;
     // usTimer.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     // usTimer.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
 
-    printf("test2\r\n");
+    // // usTimer.Init.Prescaler = 0;
+    // // usTimer.Init.CounterMode = TIM_COUNTERMODE_UP;
+    // // usTimer.Init.Period = 180000;
+    // // usTimer.Init.AutoReloadPreload = 0;
+    // // usTimer.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    // // usTimer.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+
+    // printf("test2\r\n");
+
+     CAN_Polling();
 
     // Set up the timer registers
-    HAL_TIM_Base_Init(&usTimer);
+    //HAL_TIM_Base_Init(&usTimer);
 
     // Start the timer with interrupt callbacks 
     // TIM6->CNT = 0u;
@@ -98,7 +109,7 @@ int main(void)
 
     // }
 
-    HAL_TIM_Base_Start_IT(&usTimer);
+    ///HAL_TIM_Base_Start_IT(&usTimer);
 
     // for(int i = 0; i < 10; i++) {
     //   uint32_t startUs = micros;
@@ -161,18 +172,109 @@ void createInitialDamperProfiles() {
 
 }
 
+/**
+  * @brief  Configures the CAN, transmit and receive by polling
+  * @param  None
+  * @retval PASSED if the reception is well done, FAILED in other case
+  */
+HAL_StatusTypeDef CAN_Polling(void)
+{
+  CAN_FilterTypeDef  sFilterConfig;
+  
+  /*##-1- Configure the CAN peripheral #######################################*/
+  CanHandle.Instance = CANx;
+    
+  CanHandle.Init.TimeTriggeredMode = DISABLE;
+  CanHandle.Init.AutoBusOff = DISABLE;
+  CanHandle.Init.AutoWakeUp = DISABLE;
+  CanHandle.Init.AutoRetransmission = ENABLE;
+  CanHandle.Init.ReceiveFifoLocked = DISABLE;
+  CanHandle.Init.TransmitFifoPriority = DISABLE;
+  CanHandle.Init.Mode = CAN_MODE_LOOPBACK;
+  CanHandle.Init.SyncJumpWidth = CAN_SJW_1TQ;
+  CanHandle.Init.TimeSeg1 = CAN_BS1_6TQ;
+  CanHandle.Init.TimeSeg2 = CAN_BS2_2TQ;
+  CanHandle.Init.Prescaler = 5;
+  
+  if(HAL_CAN_Init(&CanHandle) != HAL_OK)
+  {
+    /* Initialization Error */
+    Error_Handler();
+  }
 
-void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *htim) {
-  // Enable the clock that TIM6 is connected to. page 59 of ref manual
-  __HAL_RCC_GPIOB_CLK_ENABLE();
+  /*##-2- Configure the CAN Filter ###########################################*/
+  sFilterConfig.FilterBank = 0;
+  sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
+  sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
+  sFilterConfig.FilterIdHigh = 0x0000;
+  sFilterConfig.FilterIdLow = 0x0000;
+  sFilterConfig.FilterMaskIdHigh = 0x0000;
+  sFilterConfig.FilterMaskIdLow = 0x0000;
+  sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
+  sFilterConfig.FilterActivation = ENABLE;
+  sFilterConfig.SlaveStartFilterBank = 14;
+  
+  if(HAL_CAN_ConfigFilter(&CanHandle, &sFilterConfig) != HAL_OK)
+  {
+    /* Filter configuration Error */
+    Error_Handler();
+  }
 
-  // Enable clock for the timer itself
-  __HAL_RCC_TIM6_CLK_ENABLE();
+  /*##-3- Start the CAN peripheral ###########################################*/
+  if (HAL_CAN_Start(&CanHandle) != HAL_OK)
+  {
+    /* Start Error */
+    Error_Handler();
+  }
 
-  NVIC_EnableIRQ(TIM6_DAC_IRQn);
+  /*##-4- Start the Transmission process #####################################*/
+  TxHeader.StdId = 0x11;
+  TxHeader.RTR = CAN_RTR_DATA;
+  TxHeader.IDE = CAN_ID_STD;
+  TxHeader.DLC = 2;
+  TxHeader.TransmitGlobalTime = DISABLE;
+  TxData[0] = 0xCA;
+  TxData[1] = 0xFE;
+  
+  /* Request transmission */
+  if(HAL_CAN_AddTxMessage(&CanHandle, &TxHeader, TxData, &TxMailbox) != HAL_OK)
+  {
+    /* Transmission request Error */
+    Error_Handler();
+  }
+  
+  /* Wait transmission complete */
+  while(HAL_CAN_GetTxMailboxesFreeLevel(&CanHandle) != 3) {}
 
-  NVIC_SetPriority(TIM6_DAC_IRQn,14);
+  /*##-5- Start the Reception process ########################################*/
+  if(HAL_CAN_GetRxFifoFillLevel(&CanHandle, CAN_RX_FIFO0) != 1)
+  {
+    /* Reception Missing */
+    Error_Handler();
+  }
+
+  if(HAL_CAN_GetRxMessage(&CanHandle, CAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK)
+  {
+    /* Reception Error */
+    Error_Handler();
+  }
+
+  if((RxHeader.StdId != 0x11)                     ||
+     (RxHeader.RTR != CAN_RTR_DATA)               ||
+     (RxHeader.IDE != CAN_ID_STD)                 ||
+     (RxHeader.DLC != 2)                          ||
+     ((RxData[0]<<8 | RxData[1]) != 0xCAFE))
+  {
+    /* Rx message Error */
+    return HAL_ERROR;
+  }
+
+  return HAL_OK; /* Test Passed */
 }
+
+
+
+
 
 void TIM6_DAC_IRQHandler() {
   micros++;
