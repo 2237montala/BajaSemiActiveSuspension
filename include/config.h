@@ -1,10 +1,11 @@
+#pragma once
 /*
  * HEADER NAME : config.h
  * CREATOR     : Anthony Montalbano
  * CREATE DATE : 12/14/2020
  * DESCRIPTION :
  */
-#pragma once
+
 #include "arm_math.h"
 #include "stdlib.h"
 
@@ -36,9 +37,9 @@
 
 struct ShockDamperProfile
 {
-    float PID_P;
-    float PID_I;
-    float PID_D;
+    float32_t PID_P;
+    float32_t PID_I;
+    float32_t PID_D;
 };
 
 #define NUM_SHOCK_PROFILES 1

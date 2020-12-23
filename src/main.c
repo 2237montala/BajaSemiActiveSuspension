@@ -1,14 +1,17 @@
 #include "nucleo_f446re.h"
 #include "stdio.h"
-//#include "string.h"
 #include "stdbool.h"
+//#include "config.h"
 #include "Delay.h"
 #include "Uart.h"
 #include "targetCommon.h"
 #include "ControlSys.h"
 
+
 // Include arm math libraies
-#include "arm_math.h"
+#ifndef _ARM_MATH_H
+    #include "arm_math.h"
+#endif
 
 /* Private function prototypes -----------------------------------------------*/
 static void SystemClock_Config(void);
@@ -19,14 +22,8 @@ static void setupDebugUart(UART_HandleTypeDef *huart, uint32_t buadRate);
 UART_HandleTypeDef UartHandle;
 
 /* PID systems for the four shock controllers */
-arm_pid_instance_f32 PID;
 
 volatile uint32_t micros = 0;
-
-/* Coefficients for the four PID systems */
-#define PID_PARAM_KP        100            /* Proporcional */
-#define PID_PARAM_KI        0.025          /* Integral */
-#define PID_PARAM_KD        20             /* Derivative */
 
 int setup() {
   // Sets up the systick and other mcu functions
@@ -53,15 +50,6 @@ int main(void)
     printf("\r\nUART Printf Example: retarget the C library printf function to the UART\r\n");
 
     /* Infinite loop */ 
-    BSP_LED_Init(LED2);
-
-    /* Set PID parameters */
-    PID.Kp = PID_PARAM_KP;        /* Proporcional */
-    PID.Ki = PID_PARAM_KI;        /* Integral */
-    PID.Kd = PID_PARAM_KD;        /* Derivative */
-
-    /* Initialize PID system, float32_t format */
-    arm_pid_init_f32(&PID, 1);
 
     //__TIM6_CLK_ENABLE();
     TIM_HandleTypeDef usTimer = {.Instance = TIM6};
@@ -119,26 +107,6 @@ int main(void)
 
     // }
 
-    // Run an iteration of the PID system
-    float32_t pid_error = 10.0345f;
-
-    printf("Running PID\r\n");
-
-    uint32_t startTime = micros;
-    for(int i = 0; i < 100; i++) {
-      float32_t pid_out = arm_pid_f32(&PID, pid_error);
-      pid_error += 0.1;
-    }
-    uint32_t endTime = micros;
-
-    
-    printf("100 run PID compute time: %lu us\r\n",(endTime - startTime));    
-
-
-
-
-
-
     while(true) {
         BSP_LED_On(LED2);
         delay(500);
@@ -147,31 +115,31 @@ int main(void)
     }
 }
 
-void appendData(struct ShockSensorData *dataIn, struct ShockControlSystem *shockUnits, int numShocks) {
+// void appendData(struct ShockSensorData *dataIn, struct ShockControlSystem *shockUnits, int numShocks) {
 
-  for(int i = 0; i < numShocks; i++) {
-      struct ShockControlSystem *currShockController = &shockUnits[i];
+//   for(int i = 0; i < numShocks; i++) {
+//       struct ShockControlSystem *currShockController = &shockUnits[i];
 
-      int dataBufIndex = currShockController->shockData.mostRecentDataIndex;
-      if(dataBufIndex >= SHOCK_DATA_BUFFER_LEN) {
-        // If we are at the end of the buffer then we wrap around
-
-      } else {
-        // Save the new sample at next index
-        currShockController->shockData.dataBuffer[dataBufIndex] = dataIn[i];
-
-        // Update the index
-        currShockController->shockData.mostRecentDataIndex++;
-
-      }
+//       int dataBufIndex = currShockController->shockData.mostRecentDataIndex;
+//       if(dataBufIndex >= SHOCK_DATA_BUFFER_LEN) {
+//         // If we are at the end of the buffer then we wrap around
+//         dataBufIndex = 0;
 
 
+//       }
+      
+//       // Save the new sample at next index
+//       currShockController->shockData.dataBuffer[dataBufIndex] = dataIn[i];
+
+//       // Update the index
+//       currShockController->shockData.mostRecentDataIndex++;
+//     }
 
 
-  }
 
 
-}
+// }
+
 
 void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *htim) {
   // Enable the clock that TIM6 is connected to. page 59 of ref manual

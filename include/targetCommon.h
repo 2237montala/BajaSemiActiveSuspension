@@ -1,5 +1,4 @@
 #pragma once
-
 /*
  * HEADER NAME : targetCommon.h
  * CREATOR     : Anthony Montalbano
@@ -11,7 +10,9 @@
 
 #include "nucleo_f446re.h"
 
-/* Definition for USARTx clock resources */
+/*
+ * These settings enable the ST-Link on the nucleo board to be a serial adapter
+ * Definition for USARTx clock resources */
 #define USARTx                           USART2
 #define USARTx_CLK_ENABLE()              __HAL_RCC_USART2_CLK_ENABLE();
 #define USARTx_RX_GPIO_CLK_ENABLE()      __HAL_RCC_GPIOA_CLK_ENABLE()

@@ -7,6 +7,8 @@
 
 #include "ControlSys.h"
 
+struct ShockControlSystem shockControlSystems[NUM_SHOCKS];
+
 // Function pre definitions for helper functions
 /*
  * PURPOSE
@@ -34,8 +36,8 @@ void ControlSystemInit(int numShocks, arm_pid_instance_f32 *pidControllers,struc
 
 float32_t calculateDampingValue(struct ShockControlSystem *shockControlSystemUnit) {
     int dataIndex = shockControlSystemUnit->shockData.mostRecentDataIndex;
-    float32_t dy = shockControlSystemUnit->shockData.shockVelocities[dataIndex].dy;
-    float32_t dx = shockControlSystemUnit->shockData.shockVelocities[dataIndex].dx;
+    float32_t dy = shockControlSystemUnit->shockData.velocities[dataIndex].dy;
+    float32_t dx = shockControlSystemUnit->shockData.velocities[dataIndex].dx;
 
     float32_t fd_ideal = dy * 1.0f;
 
@@ -59,7 +61,7 @@ void calculateDampingValues(int numShocks,struct ShockControlSystem *shockUnits,
 
     // Copmute the output for each shock PID system
     for(int i = 0; i < numShocks; i++) {
-        int dataIndex = shockUnits[i].shockData.mostRecentDataIndex;
+        //int dataIndex = shockUnits[i].shockData.mostRecentDataIndex;
         controlSystemOutputs[i] = calculateDampingValue(&shockUnits[i]);
     }
 }

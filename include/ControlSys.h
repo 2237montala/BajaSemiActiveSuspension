@@ -1,21 +1,18 @@
+#pragma once
 /*
  * HEADER NAME : ControlSys.h
  * CREATOR     : Anthony Montalbano
  * CREATE DATE : 12/14/2020
  * DESCRIPTION :
  */
-#pragma once
-#include "targetCommon.h"
-#include "config.h"
-#include "arm_math.h"
 
+
+#include "ShockData.h"
 
 struct ShockControlSystem {
     struct SingleShockData shockData;
     arm_pid_instance_f32 shockPidController;
 };
-
-struct ShockControlSystem shockControlSystems[NUM_SHOCKS];
 
 /*
  * PURPOSE
