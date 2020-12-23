@@ -2,7 +2,7 @@
 #include "stdio.h"
 #include "stdbool.h"
 //#include "config.h"
-#include "Delay.h"
+//#include "Delay.h"
 #include "Uart.h"
 #include "targetCommon.h"
 #include "ControlSys.h"
@@ -109,6 +109,7 @@ int main(void)
 
     // }
 
+    // need to set up the irq handler again
     ///HAL_TIM_Base_Start_IT(&usTimer);
 
     // for(int i = 0; i < 10; i++) {
@@ -123,9 +124,9 @@ int main(void)
 
     while(true) {
         BSP_LED_On(LED2);
-        delay(500);
+        HAL_Delay(500);
         BSP_LED_Off(LED2);
-        delay(500);
+        HAL_Delay(500);
     }
 }
 
@@ -276,13 +277,7 @@ HAL_StatusTypeDef CAN_Polling(void)
 
 
 
-void TIM6_DAC_IRQHandler() {
-  micros++;
 
-  // Clear the interrupt
-  NVIC_ClearPendingIRQ(TIM6_DAC_IRQn);
-  TIM6->SR = ~TIM_SR_UIF;
-}
 
 /**
   * @brief  System Clock Configuration

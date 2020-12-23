@@ -21,7 +21,7 @@ int UART_Init(UART_HandleTypeDef *UartHandle);
  * RETURNS
  *      int - the number of bytes sent
  */
-int UART_putData(UART_HandleTypeDef *huart,uint8_t ptr, int len);
+int UART_putData(UART_HandleTypeDef *huart,uint8_t *ptr, int len);
 
 /*
  * PURPOSE
