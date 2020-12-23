@@ -34,20 +34,5 @@
 #define PID_I_NORMAL 5.0f
 #define PID_D_NORMAL -0.6f
 
-
-struct ShockDamperProfile
-{
-    float32_t PID_P;
-    float32_t PID_I;
-    float32_t PID_D;
-};
-
+// Defines how many different profiles are going to be available
 #define NUM_SHOCK_PROFILES 1
-const struct ShockDamperProfile shockDamperProfiles[NUM_SHOCK_PROFILES] = {
-    {
-        // Define the normal shock damping values
-        .PID_P = PID_P_NORMAL,
-        .PID_I = PID_I_NORMAL,
-        .PID_D = PID_D_NORMAL
-    }
-};

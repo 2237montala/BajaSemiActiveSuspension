@@ -8,6 +8,7 @@
 
 
 #include "ShockData.h"
+#include "ShockDamperProfile.h"
 
 struct ShockControlSystem {
     struct SingleShockData shockData;

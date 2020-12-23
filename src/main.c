@@ -14,6 +14,7 @@
 #endif
 
 /* Private function prototypes -----------------------------------------------*/
+void createInitialDamperProfiles();
 static void SystemClock_Config(void);
 static void Error_Handler(void);
 static void setupDebugUart(UART_HandleTypeDef *huart, uint32_t buadRate);
@@ -42,6 +43,8 @@ int main(void)
 {
     // Run code to set up the system
     setup();
+
+    createInitialDamperProfiles();
     
     char *msg = "Hi from uart\r\n";
 
@@ -139,6 +142,24 @@ int main(void)
 
 
 // }
+
+void createInitialDamperProfiles() {
+  // This function should be edited by the user to set the shock damper
+  // profiles. All of the coefficients should be defined here or in the 
+  // config header file
+
+  struct ShockDamperProfile tempProfiles[NUM_SHOCK_PROFILES] = {
+    {
+        // Define the normal shock damping values
+        .PID_P = PID_P_NORMAL,
+        .PID_I = PID_I_NORMAL,
+        .PID_D = PID_D_NORMAL
+    }
+  };
+
+  SdpInit(tempProfiles,NUM_SHOCK_PROFILES);
+
+}
 
 
 void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *htim) {
