@@ -34,12 +34,5 @@ int UART_putData(UART_HandleTypeDef *huart,uint8_t *ptr, int len);
  */
 int UART_putString(UART_HandleTypeDef *huart,char *str);
 
-/**
-  * @brief UART MSP Initialization 
-  *        This function configures the hardware resources used in this example: 
-  *           - Peripheral's clock enable
-  *           - Peripheral's GPIO Configuration  
-  * @param huart: UART handle pointer
-  * @retval None
-  */
-void HAL_UART_MspInit(UART_HandleTypeDef *huart);
+
+int UART_putStringNL(UART_HandleTypeDef *huart,char *str);
