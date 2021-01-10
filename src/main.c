@@ -21,7 +21,7 @@ static void setupDebugUart(UART_HandleTypeDef *huart, uint32_t buadRate);
 static HAL_StatusTypeDef CAN_Polling(void);
 
 /* UART handler declaration */
-UART_HandleTypeDef UartHandle;
+UART_HandleTypeDef debugUartHandle;
 
 CAN_HandleTypeDef     CanHandle;
 CAN_TxHeaderTypeDef   TxHeader;
@@ -43,7 +43,9 @@ int setup() {
   /* Configure the system clock to 180 MHz */
   SystemClock_Config();
 
-  setupDebugUart(&UartHandle,115200);
+  setupDebugUart(&debugUartHandle,115200);
+
+  BSP_LED_Init(LED2);
 
   return 0;
 }
@@ -57,7 +59,7 @@ int main(void)
     
     char *msg = "Hi from uart\r\n";
 
-    UART_putString(&UartHandle,msg);
+    UART_putString(&debugUartHandle,msg);
     /* Output a message on Hyperterminal using printf function */
     printf("\r\nUART Printf Example: retarget the C library printf function to the UART\r\n");
 
@@ -188,54 +190,70 @@ HAL_StatusTypeDef CAN_Polling(void)
   CanHandle.Init.TimeTriggeredMode = DISABLE;
   CanHandle.Init.AutoBusOff = DISABLE;
   CanHandle.Init.AutoWakeUp = DISABLE;
-  CanHandle.Init.AutoRetransmission = ENABLE;
+  CanHandle.Init.AutoRetransmission = DISABLE;
   CanHandle.Init.ReceiveFifoLocked = DISABLE;
   CanHandle.Init.TransmitFifoPriority = DISABLE;
-  CanHandle.Init.Mode = CAN_MODE_LOOPBACK;
+  CanHandle.Init.Mode = CAN_MODE_NORMAL;
   CanHandle.Init.SyncJumpWidth = CAN_SJW_1TQ;
-  CanHandle.Init.TimeSeg1 = CAN_BS1_6TQ;
+  CanHandle.Init.TimeSeg1 = CAN_BS1_12TQ;
   CanHandle.Init.TimeSeg2 = CAN_BS2_2TQ;
-  CanHandle.Init.Prescaler = 5;
+  CanHandle.Init.Prescaler = 6;
   
+  // Used this website to get config values
+  // http://www.bittiming.can-wiki.info/
+  // Used a APB2 clock of 45 MHz and a CAN baud rate of 500kbps
+
+  UART_putString(&debugUartHandle, "Running CAN Init\r\n");
   if(HAL_CAN_Init(&CanHandle) != HAL_OK)
   {
+    // Debug line
+    int x = 0;
     /* Initialization Error */
     Error_Handler();
   }
 
-  /*##-2- Configure the CAN Filter ###########################################*/
-  sFilterConfig.FilterBank = 0;
-  sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
-  sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
-  sFilterConfig.FilterIdHigh = 0x0000;
-  sFilterConfig.FilterIdLow = 0x0000;
-  sFilterConfig.FilterMaskIdHigh = 0x0000;
-  sFilterConfig.FilterMaskIdLow = 0x0000;
-  sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
-  sFilterConfig.FilterActivation = ENABLE;
-  sFilterConfig.SlaveStartFilterBank = 14;
+  // /*##-2- Configure the CAN Filter ###########################################*/
+  // sFilterConfig.FilterBank = 0;
+  // sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
+  // sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
+  // sFilterConfig.FilterIdHigh = 0x0000;
+  // sFilterConfig.FilterIdLow = 0x0000;
+  // sFilterConfig.FilterMaskIdHigh = 0x0000;
+  // sFilterConfig.FilterMaskIdLow = 0x0000;
+  // sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
+  // sFilterConfig.FilterActivation = ENABLE;
+  // sFilterConfig.SlaveStartFilterBank = 14;
   
-  if(HAL_CAN_ConfigFilter(&CanHandle, &sFilterConfig) != HAL_OK)
-  {
-    /* Filter configuration Error */
-    Error_Handler();
-  }
+  // if(HAL_CAN_ConfigFilter(&CanHandle, &sFilterConfig) != HAL_OK)
+  // {
+  //   /* Filter configuration Error */
+  //   Error_Handler();
+  // }
 
+
+  
   /*##-3- Start the CAN peripheral ###########################################*/
+  UART_putString(&debugUartHandle, "Running CAN start\r\n");
   if (HAL_CAN_Start(&CanHandle) != HAL_OK)
   {
     /* Start Error */
     Error_Handler();
   }
 
+  UART_putString(&debugUartHandle,"Sending request\r\n");
   /*##-4- Start the Transmission process #####################################*/
   TxHeader.StdId = 0x11;
   TxHeader.RTR = CAN_RTR_DATA;
   TxHeader.IDE = CAN_ID_STD;
   TxHeader.DLC = 2;
   TxHeader.TransmitGlobalTime = DISABLE;
-  TxData[0] = 0xCA;
-  TxData[1] = 0xFE;
+  
+  char *dataToSend = "Hi\r\n";
+
+  // TxData[0] = 0xCA;
+  // TxData[1] = 0xFE;
+
+  memcpy(TxData,dataToSend,8);
   
   /* Request transmission */
   if(HAL_CAN_AddTxMessage(&CanHandle, &TxHeader, TxData, &TxMailbox) != HAL_OK)
@@ -248,35 +266,32 @@ HAL_StatusTypeDef CAN_Polling(void)
   while(HAL_CAN_GetTxMailboxesFreeLevel(&CanHandle) != 3) {}
 
   /*##-5- Start the Reception process ########################################*/
-  if(HAL_CAN_GetRxFifoFillLevel(&CanHandle, CAN_RX_FIFO0) != 1)
-  {
-    /* Reception Missing */
-    Error_Handler();
-  }
 
+  // Wait for the shock controller to respond
+  UART_putStringNL(&debugUartHandle, "Waiting for request");
+  while(HAL_CAN_GetRxFifoFillLevel(&CanHandle, CAN_RX_FIFO0) == 0);
+
+  UART_putStringNL(&debugUartHandle, "Got request");
   if(HAL_CAN_GetRxMessage(&CanHandle, CAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK)
   {
     /* Reception Error */
     Error_Handler();
   }
 
-  if((RxHeader.StdId != 0x11)                     ||
+  if((RxHeader.StdId != 0x12)                     ||
      (RxHeader.RTR != CAN_RTR_DATA)               ||
      (RxHeader.IDE != CAN_ID_STD)                 ||
      (RxHeader.DLC != 2)                          ||
-     ((RxData[0]<<8 | RxData[1]) != 0xCAFE))
+     (RxData[0] != 10U))
   {
     /* Rx message Error */
     return HAL_ERROR;
   }
 
+  UART_putString(&debugUartHandle, "Got message from shock controller\r\n");
+
   return HAL_OK; /* Test Passed */
 }
-
-
-
-
-
 
 
 /**
@@ -359,15 +374,15 @@ void setupDebugUart(UART_HandleTypeDef *huart, uint32_t buadRate) {
         - Parity = ODD parity
         - BaudRate = 9600 baud
         - Hardware flow control disabled (RTS and CTS signals) */
-    UartHandle.Instance          = USARTx;
+    debugUartHandle.Instance          = USARTx;
     
-    UartHandle.Init.BaudRate     = buadRate;
-    UartHandle.Init.WordLength   = UART_WORDLENGTH_8B;
-    UartHandle.Init.StopBits     = UART_STOPBITS_1;
-    UartHandle.Init.Parity       = UART_PARITY_NONE;
-    UartHandle.Init.HwFlowCtl    = UART_HWCONTROL_RTS_CTS;
-    UartHandle.Init.Mode         = UART_MODE_TX_RX;
-    UartHandle.Init.OverSampling = UART_OVERSAMPLING_16;
+    debugUartHandle.Init.BaudRate     = buadRate;
+    debugUartHandle.Init.WordLength   = UART_WORDLENGTH_8B;
+    debugUartHandle.Init.StopBits     = UART_STOPBITS_1;
+    debugUartHandle.Init.Parity       = UART_PARITY_NONE;
+    debugUartHandle.Init.HwFlowCtl    = UART_HWCONTROL_RTS_CTS;
+    debugUartHandle.Init.Mode         = UART_MODE_TX_RX;
+    debugUartHandle.Init.OverSampling = UART_OVERSAMPLING_16;
 
     UART_Init(huart);
 }
@@ -380,10 +395,11 @@ void setupDebugUart(UART_HandleTypeDef *huart, uint32_t buadRate) {
   */
 static void Error_Handler(void)
 {
-  /* Turn LED2 on */
-  BSP_LED_On(LED2);
-  while(1)
-  {
+  while(true) {
+    BSP_LED_On(LED2);
+    HAL_Delay(500);
+    BSP_LED_Off(LED2);
+    HAL_Delay(500);
   }
 }
 
@@ -406,7 +422,7 @@ PUTCHAR_PROTOTYPE
 {
   /* Place your implementation of fputc here */
   /* e.g. write a character to the EVAL_COM1 and Loop until the end of transmission */
-  HAL_UART_Transmit(&UartHandle, (uint8_t *)ptr, len, 0xFFFF); 
+  HAL_UART_Transmit(&debugUartHandle, (uint8_t *)ptr, len, 0xFFFF); 
 
   return len;
 }

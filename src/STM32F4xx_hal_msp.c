@@ -21,6 +21,9 @@
   */
 void HAL_CAN_MspInit(CAN_HandleTypeDef* hcan)
 {
+  // Set up for this function was found here
+  // https://github.com/STMicroelectronics/STM32CubeF4/blob/master/Projects/STM32446E_EVAL/Examples/CAN/CAN_Loopback/Src/main.c
+  
   GPIO_InitTypeDef   GPIO_InitStruct;
   
   /*##-1- Enable peripherals and GPIO Clocks #################################*/
@@ -109,4 +112,26 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
   GPIO_InitStruct.Alternate = USARTx_RX_AF;
     
   HAL_GPIO_Init(USARTx_RX_GPIO_PORT, &GPIO_InitStruct);
+}
+
+/**
+  * @brief UART MSP De-Initialization
+  *        This function frees the hardware resources used in this example:
+  *          - Disable the Peripheral's clock
+  *          - Revert GPIO and NVIC configuration to their default state
+  * @param huart: UART handle pointer
+  * @retval None
+  */
+void HAL_UART_MspDeInit(UART_HandleTypeDef *huart)
+{
+  /*##-1- Reset peripherals ##################################################*/
+  USARTx_FORCE_RESET();
+  USARTx_RELEASE_RESET();
+
+  /*##-2- Disable peripherals and GPIO Clocks #################################*/
+  /* Configure UART Tx as alternate function  */
+  HAL_GPIO_DeInit(USARTx_TX_GPIO_PORT, USARTx_TX_PIN);
+  /* Configure UART Rx as alternate function  */
+  HAL_GPIO_DeInit(USARTx_RX_GPIO_PORT, USARTx_RX_PIN);
+
 }
