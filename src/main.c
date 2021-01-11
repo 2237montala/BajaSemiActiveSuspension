@@ -124,12 +124,8 @@ int main(void)
 
     // }
 
-    while(true) {
-        BSP_LED_On(LED2);
-        HAL_Delay(500);
-        BSP_LED_Off(LED2);
-        HAL_Delay(500);
-    }
+    BSP_LED_On(LED2);
+
 }
 
 // void appendData(struct ShockSensorData *dataIn, struct ShockControlSystem *shockUnits, int numShocks) {
@@ -195,10 +191,13 @@ HAL_StatusTypeDef CAN_Polling(void)
   CanHandle.Init.TransmitFifoPriority = DISABLE;
   CanHandle.Init.Mode = CAN_MODE_NORMAL;
   CanHandle.Init.SyncJumpWidth = CAN_SJW_1TQ;
-  CanHandle.Init.TimeSeg1 = CAN_BS1_12TQ;
+  CanHandle.Init.TimeSeg1 = CAN_BS1_15TQ;
   CanHandle.Init.TimeSeg2 = CAN_BS2_2TQ;
-  CanHandle.Init.Prescaler = 6;
+  CanHandle.Init.Prescaler = 25;
   
+  // 500kbps use Sync of 1, Seg1 of 12, Seg2 of 2, and prescale of 6
+  // 100kbps use Sync of 1, Seg1 of 15, Seg2 of 2, and prescale of 25
+
   // Used this website to get config values
   // http://www.bittiming.can-wiki.info/
   // Used a APB2 clock of 45 MHz and a CAN baud rate of 500kbps
@@ -206,29 +205,27 @@ HAL_StatusTypeDef CAN_Polling(void)
   UART_putString(&debugUartHandle, "Running CAN Init\r\n");
   if(HAL_CAN_Init(&CanHandle) != HAL_OK)
   {
-    // Debug line
-    int x = 0;
     /* Initialization Error */
     Error_Handler();
   }
 
   // /*##-2- Configure the CAN Filter ###########################################*/
-  // sFilterConfig.FilterBank = 0;
-  // sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
-  // sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
-  // sFilterConfig.FilterIdHigh = 0x0000;
-  // sFilterConfig.FilterIdLow = 0x0000;
-  // sFilterConfig.FilterMaskIdHigh = 0x0000;
-  // sFilterConfig.FilterMaskIdLow = 0x0000;
-  // sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
-  // sFilterConfig.FilterActivation = ENABLE;
-  // sFilterConfig.SlaveStartFilterBank = 14;
+  sFilterConfig.FilterBank = 0;
+  sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
+  sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
+  sFilterConfig.FilterIdHigh = 0x0000;
+  sFilterConfig.FilterIdLow = 0x0000;
+  sFilterConfig.FilterMaskIdHigh = 0x0000;
+  sFilterConfig.FilterMaskIdLow = 0x0000;
+  sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
+  sFilterConfig.FilterActivation = DISABLE;
+  sFilterConfig.SlaveStartFilterBank = 0;
   
-  // if(HAL_CAN_ConfigFilter(&CanHandle, &sFilterConfig) != HAL_OK)
-  // {
-  //   /* Filter configuration Error */
-  //   Error_Handler();
-  // }
+  if(HAL_CAN_ConfigFilter(&CanHandle, &sFilterConfig) != HAL_OK)
+  {
+    /* Filter configuration Error */
+    Error_Handler();
+  }
 
 
   
@@ -245,7 +242,7 @@ HAL_StatusTypeDef CAN_Polling(void)
   TxHeader.StdId = 0x11;
   TxHeader.RTR = CAN_RTR_DATA;
   TxHeader.IDE = CAN_ID_STD;
-  TxHeader.DLC = 2;
+  //TxHeader.DLC = sizeof;
   TxHeader.TransmitGlobalTime = DISABLE;
   
   char *dataToSend = "Hi\r\n";
@@ -255,6 +252,9 @@ HAL_StatusTypeDef CAN_Polling(void)
 
   memcpy(TxData,dataToSend,8);
   
+  // Set Data Length Code
+  TxHeader.DLC = strlen(dataToSend);
+
   /* Request transmission */
   if(HAL_CAN_AddTxMessage(&CanHandle, &TxHeader, TxData, &TxMailbox) != HAL_OK)
   {
@@ -265,34 +265,135 @@ HAL_StatusTypeDef CAN_Polling(void)
   /* Wait transmission complete */
   while(HAL_CAN_GetTxMailboxesFreeLevel(&CanHandle) != 3) {}
 
-  /*##-5- Start the Reception process ########################################*/
+  // uint32_t error = HAL_CAN_GetError(&CanHandle);
 
-  // Wait for the shock controller to respond
-  UART_putStringNL(&debugUartHandle, "Waiting for request");
-  while(HAL_CAN_GetRxFifoFillLevel(&CanHandle, CAN_RX_FIFO0) == 0);
+  // /*##-5- Start the Reception process ########################################*/
 
-  UART_putStringNL(&debugUartHandle, "Got request");
-  if(HAL_CAN_GetRxMessage(&CanHandle, CAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK)
-  {
-    /* Reception Error */
-    Error_Handler();
-  }
+  // // Wait for the shock controller to respond
+  // UART_putStringNL(&debugUartHandle, "Waiting for request");
+  // while(HAL_CAN_GetRxFifoFillLevel(&CanHandle, CAN_RX_FIFO0) == 0);
 
-  if((RxHeader.StdId != 0x12)                     ||
-     (RxHeader.RTR != CAN_RTR_DATA)               ||
-     (RxHeader.IDE != CAN_ID_STD)                 ||
-     (RxHeader.DLC != 2)                          ||
-     (RxData[0] != 10U))
-  {
-    /* Rx message Error */
-    return HAL_ERROR;
-  }
+  // UART_putStringNL(&debugUartHandle, "Got request");
+  // if(HAL_CAN_GetRxMessage(&CanHandle, CAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK)
+  // {
+  //   /* Reception Error */
+  //   Error_Handler();
+  // }
+
+  // if((RxHeader.StdId != 0x12)                     ||
+  //    (RxHeader.RTR != CAN_RTR_DATA)               ||
+  //    (RxHeader.IDE != CAN_ID_STD)                 ||
+  //    (RxHeader.DLC != 2)                          ||
+  //    (RxData[0] != 10U))
+  // {
+  //   /* Rx message Error */
+  //   return HAL_ERROR;
+  // }
 
   UART_putString(&debugUartHandle, "Got message from shock controller\r\n");
 
   return HAL_OK; /* Test Passed */
 }
 
+// /**
+//   * @brief  Configures the CAN, transmit and receive by polling
+//   * @param  None
+//   * @retval PASSED if the reception is well done, FAILED in other case
+//   */
+// HAL_StatusTypeDef CAN_Polling(void)
+// {
+//   CAN_FilterTypeDef  sFilterConfig;
+  
+//   /*##-1- Configure the CAN peripheral #######################################*/
+//   CanHandle.Instance = CANx;
+    
+//   CanHandle.Init.TimeTriggeredMode = DISABLE;
+//   CanHandle.Init.AutoBusOff = DISABLE;
+//   CanHandle.Init.AutoWakeUp = DISABLE;
+//   CanHandle.Init.AutoRetransmission = ENABLE;
+//   CanHandle.Init.ReceiveFifoLocked = DISABLE;
+//   CanHandle.Init.TransmitFifoPriority = DISABLE;
+//   CanHandle.Init.Mode = CAN_MODE_LOOPBACK;
+//   CanHandle.Init.SyncJumpWidth = CAN_SJW_1TQ;
+//   CanHandle.Init.TimeSeg1 = CAN_BS1_6TQ;
+//   CanHandle.Init.TimeSeg2 = CAN_BS2_2TQ;
+//   CanHandle.Init.Prescaler = 5;
+  
+//   if(HAL_CAN_Init(&CanHandle) != HAL_OK)
+//   {
+//     /* Initialization Error */
+//     Error_Handler();
+//   }
+
+//   /*##-2- Configure the CAN Filter ###########################################*/
+//   sFilterConfig.FilterBank = 0;
+//   sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
+//   sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
+//   sFilterConfig.FilterIdHigh = 0x0000;
+//   sFilterConfig.FilterIdLow = 0x0000;
+//   sFilterConfig.FilterMaskIdHigh = 0x0000;
+//   sFilterConfig.FilterMaskIdLow = 0x0000;
+//   sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
+//   sFilterConfig.FilterActivation = ENABLE;
+//   sFilterConfig.SlaveStartFilterBank = 14;
+  
+//   if(HAL_CAN_ConfigFilter(&CanHandle, &sFilterConfig) != HAL_OK)
+//   {
+//     /* Filter configuration Error */
+//     Error_Handler();
+//   }
+
+//   /*##-3- Start the CAN peripheral ###########################################*/
+//   if (HAL_CAN_Start(&CanHandle) != HAL_OK)
+//   {
+//     /* Start Error */
+//     Error_Handler();
+//   }
+
+//   /*##-4- Start the Transmission process #####################################*/
+//   TxHeader.StdId = 0x11;
+//   TxHeader.RTR = CAN_RTR_DATA;
+//   TxHeader.IDE = CAN_ID_STD;
+//   TxHeader.DLC = 2;
+//   TxHeader.TransmitGlobalTime = DISABLE;
+//   TxData[0] = 0xCA;
+//   TxData[1] = 0xFE;
+  
+//   /* Request transmission */
+//   if(HAL_CAN_AddTxMessage(&CanHandle, &TxHeader, TxData, &TxMailbox) != HAL_OK)
+//   {
+//     /* Transmission request Error */
+//     Error_Handler();
+//   }
+  
+//   /* Wait transmission complete */
+//   while(HAL_CAN_GetTxMailboxesFreeLevel(&CanHandle) != 3) {}
+
+//   /*##-5- Start the Reception process ########################################*/
+//   if(HAL_CAN_GetRxFifoFillLevel(&CanHandle, CAN_RX_FIFO0) != 1)
+//   {
+//     /* Reception Missing */
+//     Error_Handler();
+//   }
+
+//   if(HAL_CAN_GetRxMessage(&CanHandle, CAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK)
+//   {
+//     /* Reception Error */
+//     Error_Handler();
+//   }
+
+//   if((RxHeader.StdId != 0x11)                     ||
+//      (RxHeader.RTR != CAN_RTR_DATA)               ||
+//      (RxHeader.IDE != CAN_ID_STD)                 ||
+//      (RxHeader.DLC != 2)                          ||
+//      ((RxData[0]<<8 | RxData[1]) != 0xCAFE))
+//   {
+//     /* Rx message Error */
+//     return HAL_ERROR;
+//   }
+
+//   return HAL_OK; /* Test Passed */
+// }
 
 /**
   * @brief  System Clock Configuration
