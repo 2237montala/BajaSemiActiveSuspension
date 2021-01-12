@@ -186,7 +186,7 @@ HAL_StatusTypeDef CAN_Polling(void)
   CanHandle.Init.TimeTriggeredMode = DISABLE;
   CanHandle.Init.AutoBusOff = DISABLE;
   CanHandle.Init.AutoWakeUp = DISABLE;
-  CanHandle.Init.AutoRetransmission = DISABLE;
+  CanHandle.Init.AutoRetransmission = ENABLE;
   CanHandle.Init.ReceiveFifoLocked = DISABLE;
   CanHandle.Init.TransmitFifoPriority = DISABLE;
   CanHandle.Init.Mode = CAN_MODE_NORMAL;
@@ -219,7 +219,7 @@ HAL_StatusTypeDef CAN_Polling(void)
   sFilterConfig.FilterMaskIdLow = 0x0000;
   sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
   sFilterConfig.FilterActivation = DISABLE;
-  sFilterConfig.SlaveStartFilterBank = 0;
+  sFilterConfig.SlaveStartFilterBank = 14;
   
   if(HAL_CAN_ConfigFilter(&CanHandle, &sFilterConfig) != HAL_OK)
   {
@@ -239,21 +239,24 @@ HAL_StatusTypeDef CAN_Polling(void)
 
   UART_putString(&debugUartHandle,"Sending request\r\n");
   /*##-4- Start the Transmission process #####################################*/
-  TxHeader.StdId = 0x11;
+  TxHeader.StdId = 0x20;
   TxHeader.RTR = CAN_RTR_DATA;
   TxHeader.IDE = CAN_ID_STD;
-  //TxHeader.DLC = sizeof;
   TxHeader.TransmitGlobalTime = DISABLE;
   
-  char *dataToSend = "Hi\r\n";
+  // char *dataToSend = "Hi\r\n";
 
-  // TxData[0] = 0xCA;
-  // TxData[1] = 0xFE;
+  // // TxData[0] = 0xCA;
+  // // TxData[1] = 0xFE;
 
-  memcpy(TxData,dataToSend,8);
+  // memcpy(TxData,dataToSend,8);
   
-  // Set Data Length Code
-  TxHeader.DLC = strlen(dataToSend);
+  // // Set Data Length Code
+  // TxHeader.DLC = strlen(dataToSend);
+
+  TxData[0] = 0xCA;
+  TxData[1] = 0xFE;
+  TxHeader.DLC = 2;
 
   /* Request transmission */
   if(HAL_CAN_AddTxMessage(&CanHandle, &TxHeader, TxData, &TxMailbox) != HAL_OK)
@@ -265,30 +268,31 @@ HAL_StatusTypeDef CAN_Polling(void)
   /* Wait transmission complete */
   while(HAL_CAN_GetTxMailboxesFreeLevel(&CanHandle) != 3) {}
 
-  // uint32_t error = HAL_CAN_GetError(&CanHandle);
+  /*##-5- Start the Reception process ########################################*/
 
-  // /*##-5- Start the Reception process ########################################*/
+  // Wait for the shock controller to respond
+  UART_putStringNL(&debugUartHandle, "Waiting for request");
+  while(HAL_CAN_GetRxFifoFillLevel(&CanHandle, CAN_RX_FIFO0) == 0) {
+    uint32_t tecError = CanHandle.Instance->ESR & CAN_ESR_TEC;
+    if(tecError > 0) {
+      printf("%d\r\n",tecError);
+    }
+  }
 
-  // // Wait for the shock controller to respond
-  // UART_putStringNL(&debugUartHandle, "Waiting for request");
-  // while(HAL_CAN_GetRxFifoFillLevel(&CanHandle, CAN_RX_FIFO0) == 0);
+  UART_putStringNL(&debugUartHandle, "Got request");
+  if(HAL_CAN_GetRxMessage(&CanHandle, CAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK)
+  {
+    /* Reception Error */
+    Error_Handler();
+  }
 
-  // UART_putStringNL(&debugUartHandle, "Got request");
-  // if(HAL_CAN_GetRxMessage(&CanHandle, CAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK)
-  // {
-  //   /* Reception Error */
-  //   Error_Handler();
-  // }
-
-  // if((RxHeader.StdId != 0x12)                     ||
-  //    (RxHeader.RTR != CAN_RTR_DATA)               ||
-  //    (RxHeader.IDE != CAN_ID_STD)                 ||
-  //    (RxHeader.DLC != 2)                          ||
-  //    (RxData[0] != 10U))
-  // {
-  //   /* Rx message Error */
-  //   return HAL_ERROR;
-  // }
+  if((RxHeader.StdId != 0x12)                     ||
+     (RxHeader.RTR != CAN_RTR_DATA)               ||
+     (RxHeader.IDE != CAN_ID_STD))
+  {
+    /* Rx message Error */
+    return HAL_ERROR;
+  }
 
   UART_putString(&debugUartHandle, "Got message from shock controller\r\n");
 
