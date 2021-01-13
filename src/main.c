@@ -19,6 +19,7 @@ static void SystemClock_Config(void);
 static void Error_Handler(void);
 static void setupDebugUart(UART_HandleTypeDef *huart, uint32_t buadRate);
 static HAL_StatusTypeDef CAN_Polling(void);
+HAL_StatusTypeDef CAN_Init(void);
 
 /* UART handler declaration */
 UART_HandleTypeDef debugUartHandle;
@@ -29,7 +30,6 @@ CAN_RxHeaderTypeDef   RxHeader;
 uint8_t               TxData[8];
 uint8_t               RxData[8];
 uint32_t              TxMailbox;
-
 
 /* PID systems for the four shock controllers */
 
@@ -47,6 +47,8 @@ int setup() {
 
   BSP_LED_Init(LED2);
 
+  CAN_Init();
+
   return 0;
 }
 
@@ -61,10 +63,10 @@ int main(void)
 
     UART_putString(&debugUartHandle,msg);
     /* Output a message on Hyperterminal using printf function */
-    printf("\r\nUART Printf Example: retarget the C library printf function to the UART\r\n");
-
-    /* Infinite loop */ 
-
+    printf("UART Printf Example: retarget the C library printf function to the UART\r\n");
+    
+    CAN_Polling();
+    BSP_LED_On(LED2);
     //__TIM6_CLK_ENABLE();
     // TIM_HandleTypeDef usTimer = {.Instance = TIM6};
 
@@ -83,8 +85,6 @@ int main(void)
     // // usTimer.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
 
     // printf("test2\r\n");
-
-     CAN_Polling();
 
     // Set up the timer registers
     //HAL_TIM_Base_Init(&usTimer);
@@ -123,9 +123,6 @@ int main(void)
     //   printf("Current microseconds: %lu\r\n",(currUs - startUs));
 
     // }
-
-    BSP_LED_On(LED2);
-
 }
 
 // void appendData(struct ShockSensorData *dataIn, struct ShockControlSystem *shockUnits, int numShocks) {
@@ -171,13 +168,8 @@ void createInitialDamperProfiles() {
 
 }
 
-/**
-  * @brief  Configures the CAN, transmit and receive by polling
-  * @param  None
-  * @retval PASSED if the reception is well done, FAILED in other case
-  */
-HAL_StatusTypeDef CAN_Polling(void)
-{
+HAL_StatusTypeDef CAN_Init(void) {
+  HAL_StatusTypeDef error = HAL_OK;
   CAN_FilterTypeDef  sFilterConfig;
   
   /*##-1- Configure the CAN peripheral #######################################*/
@@ -191,25 +183,20 @@ HAL_StatusTypeDef CAN_Polling(void)
   CanHandle.Init.TransmitFifoPriority = DISABLE;
   CanHandle.Init.Mode = CAN_MODE_NORMAL;
   CanHandle.Init.SyncJumpWidth = CAN_SJW_1TQ;
-  CanHandle.Init.TimeSeg1 = CAN_BS1_15TQ;
+  CanHandle.Init.TimeSeg1 = CAN_BS1_12TQ;
   CanHandle.Init.TimeSeg2 = CAN_BS2_2TQ;
-  CanHandle.Init.Prescaler = 25;
+  CanHandle.Init.Prescaler = 6;
   
+  // Used this website to get config values
+  // http://www.bittiming.can-wiki.info/
+  // Used a APB2 clock of 45 MHz
   // 500kbps use Sync of 1, Seg1 of 12, Seg2 of 2, and prescale of 6
   // 100kbps use Sync of 1, Seg1 of 15, Seg2 of 2, and prescale of 25
 
-  // Used this website to get config values
-  // http://www.bittiming.can-wiki.info/
-  // Used a APB2 clock of 45 MHz and a CAN baud rate of 500kbps
-
-  UART_putString(&debugUartHandle, "Running CAN Init\r\n");
-  if(HAL_CAN_Init(&CanHandle) != HAL_OK)
-  {
-    /* Initialization Error */
-    Error_Handler();
-  }
+  error = HAL_CAN_Init(&CanHandle);
 
   // /*##-2- Configure the CAN Filter ###########################################*/
+  // The default has the filter blocking nothing
   sFilterConfig.FilterBank = 0;
   sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
   sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
@@ -221,23 +208,24 @@ HAL_StatusTypeDef CAN_Polling(void)
   sFilterConfig.FilterActivation = ENABLE;
   sFilterConfig.SlaveStartFilterBank = 14;
   
-  if(HAL_CAN_ConfigFilter(&CanHandle, &sFilterConfig) != HAL_OK)
-  {
-    /* Filter configuration Error */
-    Error_Handler();
+  if(error == HAL_OK) {
+    error = HAL_CAN_ConfigFilter(&CanHandle, &sFilterConfig);
   }
 
-
-  
   /*##-3- Start the CAN peripheral ###########################################*/
-  UART_putString(&debugUartHandle, "Running CAN start\r\n");
-  if (HAL_CAN_Start(&CanHandle) != HAL_OK)
-  {
-    /* Start Error */
-    Error_Handler();
+  if(error == HAL_OK) {
+    error = HAL_CAN_Start(&CanHandle);
   }
+  return error;
+}
 
-  UART_putString(&debugUartHandle,"Sending request\r\n");
+/**
+  * @brief  Configures the CAN, transmit and receive by polling
+  * @param  None
+  * @retval PASSED if the reception is well done, FAILED in other case
+  */
+HAL_StatusTypeDef CAN_Polling(void)
+{
   /*##-4- Start the Transmission process #####################################*/
   TxHeader.StdId = 0x20;
   TxHeader.RTR = CAN_RTR_DATA;
