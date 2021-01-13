@@ -218,7 +218,7 @@ HAL_StatusTypeDef CAN_Polling(void)
   sFilterConfig.FilterMaskIdHigh = 0x0000;
   sFilterConfig.FilterMaskIdLow = 0x0000;
   sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
-  sFilterConfig.FilterActivation = DISABLE;
+  sFilterConfig.FilterActivation = ENABLE;
   sFilterConfig.SlaveStartFilterBank = 14;
   
   if(HAL_CAN_ConfigFilter(&CanHandle, &sFilterConfig) != HAL_OK)
@@ -295,6 +295,7 @@ HAL_StatusTypeDef CAN_Polling(void)
   }
 
   UART_putString(&debugUartHandle, "Got message from shock controller\r\n");
+  printf("%d\r\n",RxData[0]);
 
   return HAL_OK; /* Test Passed */
 }
