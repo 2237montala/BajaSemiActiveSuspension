@@ -47,3 +47,10 @@
 #define CANx_RX_PIN                    GPIO_PIN_8
 #define CANx_RX_GPIO_PORT              GPIOB
 #define CANx_RX_AF                     GPIO_AF9_CAN1
+
+struct ioVec {
+    uintptr_t *data;
+    uint32_t len;
+};
+
+
