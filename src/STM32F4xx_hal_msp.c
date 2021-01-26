@@ -1,5 +1,5 @@
 /* Includes ------------------------------------------------------------------*/
-#include "targetCommon.h"
+#include "targetSpecific.h"
 #include "stm32f4xx_hal.h"
 
 
@@ -73,18 +73,6 @@ void HAL_CAN_MspDeInit(CAN_HandleTypeDef *hcan)
   HAL_GPIO_DeInit(CANx_RX_GPIO_PORT, CANx_RX_PIN);
 }
 
-void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *htim) {
-  // Enable the clock that TIM6 is connected to. page 59 of ref manual
-  __HAL_RCC_GPIOB_CLK_ENABLE();
-
-  // Enable clock for the timer itself
-  __HAL_RCC_TIM6_CLK_ENABLE();
-
-  NVIC_EnableIRQ(TIM6_DAC_IRQn);
-
-  NVIC_SetPriority(TIM6_DAC_IRQn,14);
-}
-
 void HAL_UART_MspInit(UART_HandleTypeDef *huart)
 {  
   GPIO_InitTypeDef  GPIO_InitStruct;
@@ -133,5 +121,25 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef *huart)
   HAL_GPIO_DeInit(USARTx_TX_GPIO_PORT, USARTx_TX_PIN);
   /* Configure UART Rx as alternate function  */
   HAL_GPIO_DeInit(USARTx_RX_GPIO_PORT, USARTx_RX_PIN);
+
+}
+
+void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *htim) {
+  if(htim->Instance == TIM6) {
+    // Enable the clock that TIM4 is connected to. This might not be needed
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+
+    // Enable clock for the timer itself
+    __HAL_RCC_TIM6_CLK_ENABLE();
+  }
+  
+}
+
+void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef *htim) {
+  if(htim->Instance == TIM6) {
+    __HAL_RCC_TIM6_CLK_ENABLE();
+    __HAL_RCC_TIM6_RELEASE_RESET();
+    HAL_NVIC_DisableIRQ(TIM6_DAC_IRQn);
+  }
 
 }

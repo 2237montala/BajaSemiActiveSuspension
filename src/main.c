@@ -1,12 +1,11 @@
-#include "nucleo_f446re.h"
+
+#include "targetSpecific.h"
 #include "stdio.h"
 #include "stdbool.h"
-//#include "config.h"
-//#include "Delay.h"
 #include "Uart.h"
 #include "targetCommon.h"
-#include "ControlSys.h"
-#include "can.h"
+//#include "ControlSys.h"
+#include "CANopen.h"
 
 
 // Include arm math libraies
@@ -19,15 +18,29 @@ void createInitialDamperProfiles();
 static void SystemClock_Config(void);
 static void Error_Handler(void);
 static void setupDebugUart(UART_HandleTypeDef *huart, uint32_t buadRate);
-static HAL_StatusTypeDef CAN_Polling(void);
-HAL_StatusTypeDef CAN_Init(void);
+
+CAN_HandleTypeDef     CanHandle;
 
 /* UART handler declaration */
 UART_HandleTypeDef debugUartHandle;
 
+TIM_HandleTypeDef msTimer = {.Instance = TIM6};
+#define TIM6_IRQ_PRIORITY 0xF
+
 /* PID systems for the four shock controllers */
 
 volatile uint32_t micros = 0;
+
+#define TMR_TASK_INTERVAL   (1000)          /* Interval of tmrTask thread in microseconds */
+#define INCREMENT_1MS(var)  (var++)         /* Increment 1ms variable in tmrTask */
+
+#define log_printf(macropar_message, ...) \
+        printf(macropar_message, ##__VA_ARGS__)
+
+
+/* Global variables and objects */
+volatile uint16_t   CO_timer1ms = 0U;   /* variable increments each millisecond */
+uint8_t LED_red, LED_green;
 
 int setup() {
   // Sets up the systick and other mcu functions
@@ -41,246 +54,194 @@ int setup() {
 
   BSP_LED_Init(LED2);
 
-  CAN_Init();
+  //CAN_Init();
 
   return 0;
 }
 
-int main(void)
-{
-    // Run code to set up the system
+int main (void){
+    CO_ReturnError_t err;
+    CO_NMT_reset_cmd_t reset = CO_RESET_NOT;
+    uint32_t heapMemoryUsed;
+    void *CANmoduleAddress = &CanHandle; /* CAN module address */
+    uint8_t pendingNodeId = 10; /* read from dip switches or nonvolatile memory, configurable by LSS slave */
+    uint8_t activeNodeId = 10; /* Copied from CO_pendingNodeId in the communication reset section */
+    uint16_t pendingBitRate = 500;  /* read from dip switches or nonvolatile memory, configurable by LSS slave */
+
+    /* Configure microcontroller. */
     setup();
 
-    createInitialDamperProfiles();
-    
-    char *msg = "Hi from uart\r\n";
-
-    UART_putString(&debugUartHandle,msg);
-    /* Output a message on Hyperterminal using printf function */
-    printf("UART Printf Example: retarget the C library printf function to the UART\r\n");
-    
-    
-    BSP_LED_On(LED2);
-    //__TIM6_CLK_ENABLE();
-    // TIM_HandleTypeDef usTimer = {.Instance = TIM6};
-
-    // usTimer.Init.Prescaler = 0;
-    // usTimer.Init.CounterMode = TIM_COUNTERMODE_UP;
-    // usTimer.Init.Period = 176;
-    // usTimer.Init.AutoReloadPreload = 0;
-    // usTimer.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-    // usTimer.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
-
-    // // usTimer.Init.Prescaler = 0;
-    // // usTimer.Init.CounterMode = TIM_COUNTERMODE_UP;
-    // // usTimer.Init.Period = 180000;
-    // // usTimer.Init.AutoReloadPreload = 0;
-    // // usTimer.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-    // // usTimer.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
-
-    // printf("test2\r\n");
-
-    // Set up the timer registers
-    //HAL_TIM_Base_Init(&usTimer);
-
-    // Start the timer with interrupt callbacks 
-    // TIM6->CNT = 0u;
-    // HAL_TIM_Base_Start(&usTimer);
-
-    // Wait a second
-    // for(int i = 0; i < 10; i++) {
-    //   TIM6->CNT = 0u;
-    //   HAL_TIM_Base_Start(&usTimer);
-
-
-    //   uint32_t startUs = TIM6->CNT;
-    //   delay(10);
-    //   uint32_t currUs = TIM6->CNT;
-
-    //   printf("Start count: %lu\r\n",startUs);
-    //   printf("End count: %lu\r\n",currUs);
-    //   printf("Current microseconds: %lu\r\n",(currUs - startUs));
-
-    //   HAL_TIM_Base_Stop(&usTimer);
-
-    // }
-
-    // need to set up the irq handler again
-    ///HAL_TIM_Base_Start_IT(&usTimer);
-
-    // for(int i = 0; i < 10; i++) {
-    //   uint32_t startUs = micros;
-    //   delay(10);
-    //   uint32_t currUs = micros;
-    //   printf("Start count: %lu\r\n",startUs);
-    //   printf("End count: %lu\r\n",currUs);
-    //   printf("Current microseconds: %lu\r\n",(currUs - startUs));
-
-    // }
-}
-
-// void appendData(struct ShockSensorData *dataIn, struct ShockControlSystem *shockUnits, int numShocks) {
-
-//   for(int i = 0; i < numShocks; i++) {
-//       struct ShockControlSystem *currShockController = &shockUnits[i];
-
-//       int dataBufIndex = currShockController->shockData.mostRecentDataIndex;
-//       if(dataBufIndex >= SHOCK_DATA_BUFFER_LEN) {
-//         // If we are at the end of the buffer then we wrap around
-//         dataBufIndex = 0;
-
-
-//       }
-      
-//       // Save the new sample at next index
-//       currShockController->shockData.dataBuffer[dataBufIndex] = dataIn[i];
-
-//       // Update the index
-//       currShockController->shockData.mostRecentDataIndex++;
-//     }
-
-
-
-
-// }
-
-void createInitialDamperProfiles() {
-  // This function should be edited by the user to set the shock damper
-  // profiles. All of the coefficients should be defined here or in the 
-  // config header file
-
-  struct ShockDamperProfile tempProfiles[NUM_SHOCK_PROFILES] = {
-    {
-        // Define the normal shock damping values
-        .PID_P = PID_P_NORMAL,
-        .PID_I = PID_I_NORMAL,
-        .PID_D = PID_D_NORMAL
+    /* Allocate memory but these are statically allocated so no malloc */
+    err = CO_new(&heapMemoryUsed);
+    if (err != CO_ERROR_NO) {
+        log_printf("Error: Can't allocate memory\n");
+        return 0;
     }
-  };
+    else {
+        log_printf("Allocated %d bytes for CANopen objects\n", heapMemoryUsed);
+    }
 
-  SdpInit(tempProfiles,NUM_SHOCK_PROFILES);
+    /* initialize EEPROM */
 
+
+    /* increase variable each startup. Variable is stored in EEPROM. */
+    //OD_powerOnCounter++;
+
+    //log_printf("CANopenNode - Reset application, count = %d\n", OD_powerOnCounter);
+
+
+    while(reset != CO_RESET_APP){
+/* CANopen communication reset - initialize CANopen objects *******************/
+        uint16_t timer1msPrevious;
+
+        log_printf("CANopenNode - Reset communication...\n");
+
+        /* disable CAN and CAN interrupts */
+
+        /* initialize CANopen */
+        err = CO_CANinit(CANmoduleAddress, pendingBitRate);
+        if (err != CO_ERROR_NO) {
+            log_printf("Error: CAN initialization failed: %d\n", err);
+            return 0;
+        }
+        err = CO_LSSinit(&pendingNodeId, &pendingBitRate);
+        if(err != CO_ERROR_NO) {
+            log_printf("Error: LSS slave initialization failed: %d\n", err);
+            return 0;
+        }
+        activeNodeId = pendingNodeId;
+        err = CO_CANopenInit(activeNodeId);
+        if(err != CO_ERROR_NO && err != CO_ERROR_NODE_ID_UNCONFIGURED_LSS) {
+            log_printf("Error: CANopen initialization failed: %d\n", err);
+            return 0;
+        }
+
+        /* Configure Timer interrupt function for execution every 1 millisecond */
+
+        HAL_TIM_Base_DeInit(&msTimer);
+        HAL_TIM_Base_Stop_IT(&msTimer);
+
+        // Using timer 6
+        // Timer 4 input clock is APB1
+        // As of now APB1 is 45Mhz
+        // The Timer 4 clock input is multiplied by 2 so 90 Mhz.
+
+
+        __TIM6_CLK_ENABLE();
+
+        // Input = 90 Mhz
+        // Interal divider = 1
+        // Prescaler = 90
+        // Clock rate = (Input)/(Interal divider * prescaler)
+        //            = (90 MHz)/(90) = 1 Mhz
+
+        msTimer.Init.Prescaler = 90-1;
+        msTimer.Init.CounterMode = TIM_COUNTERMODE_UP;
+        msTimer.Init.Period = 1000-1;
+        msTimer.Init.AutoReloadPreload = 0;
+        msTimer.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+        msTimer.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+
+        /* Configure CAN transmit and receive interrupt */
+
+        // Initalize timer device
+        HAL_TIM_Base_Init(&msTimer);
+
+        // Set up interrupts for the timer
+        HAL_NVIC_SetPriority(TIM6_DAC_IRQn,TIM6_IRQ_PRIORITY,0);
+        HAL_NVIC_EnableIRQ(TIM6_DAC_IRQn);
+
+        // Enable interrupts for timer
+        HAL_TIM_Base_Start_IT(&msTimer);
+
+        /* Configure CANopen callbacks, etc */
+        if(!CO->nodeIdUnconfigured) {
+
+        }
+
+
+        /* start CAN */
+        CO_CANsetNormalMode(CO->CANmodule[0]);
+
+        reset = CO_RESET_NOT;
+        timer1msPrevious = CO_timer1ms;
+
+        log_printf("CANopenNode - Running...\n");
+        fflush(stdout);
+
+        while(reset == CO_RESET_NOT){
+/* loop for normal program execution ******************************************/
+            uint16_t timer1msCopy, timer1msDiff;
+
+            timer1msCopy = CO_timer1ms;
+            timer1msDiff = timer1msCopy - timer1msPrevious;
+            timer1msPrevious = timer1msCopy;
+
+
+            /* CANopen process */
+            reset = CO_process(CO, (uint32_t)timer1msDiff*1000, NULL);
+
+            /* Nonblocking application code may go here. */
+
+            /* Process EEPROM */
+
+            /* optional sleep for short time */
+        }
+    }
+
+
+/* program exit ***************************************************************/
+    /* stop threads */
+
+
+    /* delete objects from memory */
+    CO_delete((void*) 0/* CAN module address */);
+
+    log_printf("CANopenNode finished\n");
+
+    /* reset */
+    return 0;
 }
 
-// HAL_StatusTypeDef CAN_Init(void) {
-//   HAL_StatusTypeDef error = HAL_OK;
-//   CAN_FilterTypeDef  sFilterConfig;
-  
-//   /*##-1- Configure the CAN peripheral #######################################*/
-//   CanHandle.Instance = CANx;
-    
-//   CanHandle.Init.TimeTriggeredMode = DISABLE;
-//   CanHandle.Init.AutoBusOff = DISABLE;
-//   CanHandle.Init.AutoWakeUp = DISABLE;
-//   CanHandle.Init.AutoRetransmission = ENABLE;
-//   CanHandle.Init.ReceiveFifoLocked = DISABLE;
-//   CanHandle.Init.TransmitFifoPriority = DISABLE;
-//   CanHandle.Init.Mode = CAN_MODE_NORMAL;
-//   CanHandle.Init.SyncJumpWidth = CAN_SJW_1TQ;
-//   CanHandle.Init.TimeSeg1 = CAN_BS1_12TQ;
-//   CanHandle.Init.TimeSeg2 = CAN_BS2_2TQ;
-//   CanHandle.Init.Prescaler = 6;
-  
-//   // Used this website to get config values
-//   // http://www.bittiming.can-wiki.info/
-//   // Used a APB2 clock of 45 MHz
-//   // 500kbps use Sync of 1, Seg1 of 12, Seg2 of 2, and prescale of 6
-//   // 100kbps use Sync of 1, Seg1 of 15, Seg2 of 2, and prescale of 25
 
-//   error = HAL_CAN_Init(&CanHandle);
+/* timer thread executes in constant intervals ********************************/
+void tmrTask_thread(void){
 
-//   // /*##-2- Configure the CAN Filter ###########################################*/
-//   // The default has the filter blocking nothing
-//   sFilterConfig.FilterBank = 0;
-//   sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
-//   sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
-//   sFilterConfig.FilterIdHigh = 0x0000;
-//   sFilterConfig.FilterIdLow = 0x0000;
-//   sFilterConfig.FilterMaskIdHigh = 0x0000;
-//   sFilterConfig.FilterMaskIdLow = 0x0000;
-//   sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
-//   sFilterConfig.FilterActivation = ENABLE;
-//   sFilterConfig.SlaveStartFilterBank = 14;
-  
-//   if(error == HAL_OK) {
-//     error = HAL_CAN_ConfigFilter(&CanHandle, &sFilterConfig);
-//   }
+    for(;;) {
 
-//   /*##-3- Start the CAN peripheral ###########################################*/
-//   if(error == HAL_OK) {
-//     error = HAL_CAN_Start(&CanHandle);
-//   }
-//   return error;
-// }
+        /* sleep for interval */
 
-// /**
-//   * @brief  Configures the CAN, transmit and receive by polling
-//   * @param  None
-//   * @retval PASSED if the reception is well done, FAILED in other case
-//   */
-// HAL_StatusTypeDef CAN_Polling(void)
-// {
-//   /*##-4- Start the Transmission process #####################################*/
-//   TxHeader.StdId = 0x20;
-//   TxHeader.RTR = CAN_RTR_DATA;
-//   TxHeader.IDE = CAN_ID_STD;
-//   TxHeader.TransmitGlobalTime = DISABLE;
-  
-//   // char *dataToSend = "Hi\r\n";
+        INCREMENT_1MS(CO_timer1ms);
 
-//   // // TxData[0] = 0xCA;
-//   // // TxData[1] = 0xFE;
+        if(CO->CANmodule[0]->CANnormal) {
+            bool_t syncWas;
 
-//   // memcpy(TxData,dataToSend,8);
-  
-//   // // Set Data Length Code
-//   // TxHeader.DLC = strlen(dataToSend);
+            /* Process Sync */
+            syncWas = CO_process_SYNC(CO, TMR_TASK_INTERVAL, NULL);
 
-//   TxData[0] = 0xCA;
-//   TxData[1] = 0xFE;
-//   TxHeader.DLC = 2;
+            /* Read inputs */
+            CO_process_RPDO(CO, syncWas);
 
-//   /* Request transmission */
-//   if(HAL_CAN_AddTxMessage(&CanHandle, &TxHeader, TxData, &TxMailbox) != HAL_OK)
-//   {
-//     /* Transmission request Error */
-//     Error_Handler();
-//   }
-  
-//   /* Wait transmission complete */
-//   while(HAL_CAN_GetTxMailboxesFreeLevel(&CanHandle) != 3) {}
+            /* Further I/O or nonblocking application code may go here. */
 
-//   /*##-5- Start the Reception process ########################################*/
+            /* Write outputs */
+            CO_process_TPDO(CO, syncWas, TMR_TASK_INTERVAL, NULL);
 
-//   // Wait for the shock controller to respond
-//   UART_putStringNL(&debugUartHandle, "Waiting for request");
-//   while(HAL_CAN_GetRxFifoFillLevel(&CanHandle, CAN_RX_FIFO0) == 0) {
-//     uint32_t tecError = CanHandle.Instance->ESR & CAN_ESR_TEC;
-//     if(tecError > 0) {
-//       printf("%d\r\n",tecError);
-//     }
-//   }
+            /* verify timer overflow */
+            if(0) {
+                CO_errorReport(CO->em, CO_EM_ISR_TIMER_OVERFLOW, CO_EMC_SOFTWARE_INTERNAL, 0U);
+            }
+        }
+    }
+}
 
-//   UART_putStringNL(&debugUartHandle, "Got request");
-//   if(HAL_CAN_GetRxMessage(&CanHandle, CAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK)
-//   {
-//     /* Reception Error */
-//     Error_Handler();
-//   }
 
-//   if((RxHeader.StdId != 0x12)                     ||
-//      (RxHeader.RTR != CAN_RTR_DATA)               ||
-//      (RxHeader.IDE != CAN_ID_STD))
-//   {
-//     /* Rx message Error */
-//     return HAL_ERROR;
-//   }
+/* CAN interrupt function executes on received CAN message ********************/
+void /* interrupt */ CO_CAN1InterruptHandler(void){
 
-//   UART_putString(&debugUartHandle, "Got message from shock controller\r\n");
-//   printf("%d\r\n",RxData[0]);
+    /* clear interrupt flag */
+}
 
-//   return HAL_OK; /* Test Passed */
-// }
 
 /**
   * @brief  System Clock Configuration

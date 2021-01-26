@@ -14,7 +14,7 @@
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* CAN handler declared in "main.c" file */
-extern CAN_HandleTypeDef CanHandle;
+//extern CAN_HandleTypeDef CanHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
@@ -153,7 +153,7 @@ void DMA1_Stream6_IRQHandler(void)
 */
 void CAN1_RX0_IRQHandler(void)
 {
-  HAL_CAN_IRQHandler(&CanHandle);
+  //HAL_CAN_IRQHandler(&CanHandle);
 }
 
 
@@ -164,7 +164,7 @@ void CAN1_RX0_IRQHandler(void)
 */
 void CAN2_RX0_IRQHandler(void)
 {
-  HAL_CAN_IRQHandler(&CanHandle);
+  //HAL_CAN_IRQHandler(&CanHandle);
 }
 
 /**
@@ -174,7 +174,7 @@ void CAN2_RX0_IRQHandler(void)
 */
 void CAN1_RX1_IRQHandler(void)
 {
-  HAL_CAN_IRQHandler(&CanHandle);
+  //HAL_CAN_IRQHandler(&CanHandle);
 }
 
 
@@ -185,7 +185,7 @@ void CAN1_RX1_IRQHandler(void)
 */
 void CAN2_RX1_IRQHandler(void)
 {
-  HAL_CAN_IRQHandler(&CanHandle);
+  //HAL_CAN_IRQHandler(&CanHandle);
 }
 
 /**
@@ -195,7 +195,7 @@ void CAN2_RX1_IRQHandler(void)
 */
 void CAN1_TX_IRQHandler(void)
 {
-  HAL_CAN_IRQHandler(&CanHandle);
+  //HAL_CAN_IRQHandler(&CanHandle);
 }
 
 /**
@@ -205,7 +205,7 @@ void CAN1_TX_IRQHandler(void)
 */
 void CAN2_TX_IRQHandler(void)
 {
- HAL_CAN_IRQHandler(&CanHandle);
+ //HAL_CAN_IRQHandler(&CanHandle);
 }
 
 /**
