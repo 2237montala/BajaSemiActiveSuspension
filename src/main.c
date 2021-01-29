@@ -104,11 +104,11 @@ int main (void){
             log_printf("Error: CAN initialization failed: %d\n", err);
             return 0;
         }
-        err = CO_LSSinit(&pendingNodeId, &pendingBitRate);
-        if(err != CO_ERROR_NO) {
-            log_printf("Error: LSS slave initialization failed: %d\n", err);
-            return 0;
-        }
+        // err = CO_LSSinit(&pendingNodeId, &pendingBitRate);
+        // if(err != CO_ERROR_NO) {
+        //     log_printf("Error: LSS slave initialization failed: %d\n", err);
+        //     return 0;
+        // }
         activeNodeId = pendingNodeId;
         err = CO_CANopenInit(activeNodeId);
         if(err != CO_ERROR_NO && err != CO_ERROR_NODE_ID_UNCONFIGURED_LSS) {
@@ -374,4 +374,16 @@ PUTCHAR_PROTOTYPE
   HAL_UART_Transmit(&debugUartHandle, (uint8_t *)ptr, len, 0xFFFF); 
 
   return len;
+}
+
+void TIM6_DAC_IRQHandler(void) {
+    HAL_TIM_IRQHandler(&msTimer);
+}
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+    if(htim->Instance == TIM6) {
+        tmrTask_thread();
+    }
+    
+    
 }
