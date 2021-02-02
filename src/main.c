@@ -1,4 +1,4 @@
-
+#include "config.h"
 #include "targetSpecific.h"
 #include "stdio.h"
 #include "stdbool.h"
@@ -18,6 +18,8 @@ void createInitialDamperProfiles();
 static void SystemClock_Config(void);
 static void Error_Handler(void);
 static void setupDebugUart(UART_HandleTypeDef *huart, uint32_t buadRate);
+void ShockControllerBooted(uint8_t nodeId, uint8_t idx, void *object);
+void ShockControllerNMTChange(uint8_t nodeId,uint8_t idx, CO_NMT_internalState_t state, void *object);
 
 CAN_HandleTypeDef     CanHandle;
 
@@ -41,6 +43,7 @@ volatile uint32_t micros = 0;
 /* Global variables and objects */
 volatile uint16_t   CO_timer1ms = 0U;   /* variable increments each millisecond */
 uint8_t LED_red, LED_green;
+volatile uint32_t tempTimer = 0;
 
 int setup() {
   // Sets up the systick and other mcu functions
@@ -64,8 +67,7 @@ int main (void){
     CO_NMT_reset_cmd_t reset = CO_RESET_NOT;
     uint32_t heapMemoryUsed;
     void *CANmoduleAddress = &CanHandle; /* CAN module address */
-    uint8_t pendingNodeId = 10; /* read from dip switches or nonvolatile memory, configurable by LSS slave */
-    uint8_t activeNodeId = 10; /* Copied from CO_pendingNodeId in the communication reset section */
+    uint8_t activeNodeId = 0x5; /* Copied from CO_pendingNodeId in the communication reset section */
     uint16_t pendingBitRate = 500;  /* read from dip switches or nonvolatile memory, configurable by LSS slave */
 
     /* Configure microcontroller. */
@@ -74,11 +76,11 @@ int main (void){
     /* Allocate memory but these are statically allocated so no malloc */
     err = CO_new(&heapMemoryUsed);
     if (err != CO_ERROR_NO) {
-        log_printf("Error: Can't allocate memory\n");
+        log_printf("Error: Can't allocate memory\r\n");
         return 0;
     }
     else {
-        log_printf("Allocated %d bytes for CANopen objects\n", heapMemoryUsed);
+        log_printf("Allocated %d bytes for CANopen objects\r\n", heapMemoryUsed);
     }
 
     /* initialize EEPROM */
@@ -94,14 +96,19 @@ int main (void){
 /* CANopen communication reset - initialize CANopen objects *******************/
         uint16_t timer1msPrevious;
 
-        log_printf("CANopenNode - Reset communication...\n");
+        // Add one shock controller to the list of monitored notes
+        uint32_t temp = (SHOCK_CONTROLLER_ONE_ID) << 16U;
+        temp |= 100U;
+        OD_consumerHeartbeatTime[0] = temp;
+
+        log_printf("CANopenNode - Reset communication...\r\n");
 
         /* disable CAN and CAN interrupts */
 
         /* initialize CANopen */
         err = CO_CANinit(CANmoduleAddress, pendingBitRate);
         if (err != CO_ERROR_NO) {
-            log_printf("Error: CAN initialization failed: %d\n", err);
+            log_printf("Error: CAN initialization failed: %d\r\n", err);
             return 0;
         }
         // err = CO_LSSinit(&pendingNodeId, &pendingBitRate);
@@ -109,10 +116,9 @@ int main (void){
         //     log_printf("Error: LSS slave initialization failed: %d\n", err);
         //     return 0;
         // }
-        activeNodeId = pendingNodeId;
         err = CO_CANopenInit(activeNodeId);
         if(err != CO_ERROR_NO && err != CO_ERROR_NODE_ID_UNCONFIGURED_LSS) {
-            log_printf("Error: CANopen initialization failed: %d\n", err);
+            log_printf("Error: CANopen initialization failed: %d\r\n", err);
             return 0;
         }
 
@@ -154,11 +160,28 @@ int main (void){
         // Enable interrupts for timer
         HAL_TIM_Base_Start_IT(&msTimer);
 
-        /* Configure CANopen callbacks, etc */
-        if(!CO->nodeIdUnconfigured) {
+        // uint32_t startTimer = tempTimer;
+        // HAL_Delay(1000);
+        // uint32_t endTimer = tempTimer;
+        // printf("Timer diff: %lu\r\n",endTimer - startTimer);
 
-        }
+        // /* Configure CANopen callbacks, etc */
+        // if(!CO->nodeIdUnconfigured) {
 
+        // }
+
+        // Set up monitor node id's
+        // 
+        
+
+
+        //CO_HBconsumer_initEntry(CO->HBcons,,SHOCK_CONTROLLER_ONE_ID,)
+
+        CO_HBconsumer_initCallbackRemoteReset(CO->HBcons,SHOCK_CONTROLLER_ONE_ID,
+                                              NULL,ShockControllerBooted);
+
+        CO_HBconsumer_initCallbackNmtChanged(CO->HBcons,SHOCK_CONTROLLER_ONE_ID,
+                                             NULL,ShockControllerNMTChange);
 
         /* start CAN */
         CO_CANsetNormalMode(CO->CANmodule[0]);
@@ -166,7 +189,7 @@ int main (void){
         reset = CO_RESET_NOT;
         timer1msPrevious = CO_timer1ms;
 
-        log_printf("CANopenNode - Running...\n");
+        log_printf("CANopenNode - Running...\r\n");
         fflush(stdout);
 
         while(reset == CO_RESET_NOT){
@@ -197,7 +220,7 @@ int main (void){
     /* delete objects from memory */
     CO_delete((void*) 0/* CAN module address */);
 
-    log_printf("CANopenNode finished\n");
+    log_printf("CANopenNode finished\r\n");
 
     /* reset */
     return 0;
@@ -206,33 +229,27 @@ int main (void){
 
 /* timer thread executes in constant intervals ********************************/
 void tmrTask_thread(void){
+  /* sleep for interval */
+  INCREMENT_1MS(CO_timer1ms);
+  if(CO->CANmodule[0]->CANnormal) {
+      bool_t syncWas;
 
-    for(;;) {
+      /* Process Sync */
+      syncWas = CO_process_SYNC(CO, TMR_TASK_INTERVAL, NULL);
 
-        /* sleep for interval */
+      /* Read inputs */
+      CO_process_RPDO(CO, syncWas);
 
-        INCREMENT_1MS(CO_timer1ms);
+      /* Further I/O or nonblocking application code may go here. */
 
-        if(CO->CANmodule[0]->CANnormal) {
-            bool_t syncWas;
+      /* Write outputs */
+      CO_process_TPDO(CO, syncWas, TMR_TASK_INTERVAL, NULL);
 
-            /* Process Sync */
-            syncWas = CO_process_SYNC(CO, TMR_TASK_INTERVAL, NULL);
-
-            /* Read inputs */
-            CO_process_RPDO(CO, syncWas);
-
-            /* Further I/O or nonblocking application code may go here. */
-
-            /* Write outputs */
-            CO_process_TPDO(CO, syncWas, TMR_TASK_INTERVAL, NULL);
-
-            /* verify timer overflow */
-            if(0) {
-                CO_errorReport(CO->em, CO_EM_ISR_TIMER_OVERFLOW, CO_EMC_SOFTWARE_INTERNAL, 0U);
-            }
-        }
-    }
+      /* verify timer overflow */
+      if(0) {
+          CO_errorReport(CO->em, CO_EM_ISR_TIMER_OVERFLOW, CO_EMC_SOFTWARE_INTERNAL, 0U);
+      }
+  }
 }
 
 
@@ -386,4 +403,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
     }
     
     
+}
+
+void ShockControllerBooted(uint8_t nodeId, uint8_t idx, void *object) {
+  printf("Shock controller node %d booted\r\n",nodeId);
+}
+
+void ShockControllerNMTChange(uint8_t nodeId,uint8_t idx, CO_NMT_internalState_t state, void *object) {
+  printf("Shock controller node %d NMT changed\r\n",nodeId);
 }

@@ -100,7 +100,8 @@ CO_ReturnError_t CO_CANmodule_init(
     CANmodule->txSize = txSize;
     CANmodule->CANerrorStatus = 0;
     CANmodule->CANnormal = false;
-    CANmodule->useCANrxFilters = (rxSize <= 32U) ? true : false;/* microcontroller dependent */
+    //CANmodule->useCANrxFilters = (rxSize <= 32U) ? true : false;/* microcontroller dependent */
+    CANmodule->useCANrxFilters = false;
     CANmodule->bufferInhibitFlag = false;
     CANmodule->firstCANtxMessage = true;
     CANmodule->CANtxCount = 0U;
@@ -214,6 +215,7 @@ CO_ReturnError_t CO_CANrxBufferInit(
         /* Set CAN hardware module filter and mask. */
         if(CANmodule->useCANrxFilters){
             // TODO: Add hardware filters
+            
         } else {
             // No hardware filters are used
             CAN_FilterTypeDef  FilterConfig;

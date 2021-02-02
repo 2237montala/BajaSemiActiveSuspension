@@ -6,11 +6,6 @@
  * DESCRIPTION :
  */
 
-#include "arm_math.h"
-#include "stdlib.h"
-
-#define NUM_SHOCKS 4
-
 // How many milliseconds between shock data samples
 #define SHOCK_DATA_COLLECTION_RATE 5
 
@@ -36,3 +31,10 @@
 
 // Defines how many different profiles are going to be available
 #define NUM_SHOCK_PROFILES 1
+
+
+#define NUM_SHOCKS 1
+// Shock controller CAN ids
+// These are set by the dip switches on the controller itself and must be 
+// listed here
+#define SHOCK_CONTROLLER_ONE_ID 0x20

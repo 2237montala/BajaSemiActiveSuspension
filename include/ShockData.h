@@ -1,5 +1,7 @@
 #pragma once
 #include "config.h"
+#include "arm_math.h"
+#include "stdlib.h"
 
 // Sensor Structure
 struct ShockSensorData {
