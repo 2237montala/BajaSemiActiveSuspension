@@ -2,6 +2,11 @@
 #include "targetSpecific.h"
 #include "stm32f4xx_hal.h"
 
+// Interrupt prioritys
+#define TIM6_IRQ_PRIORITY 0xF
+#define CAN1_TX_IRQ_PRIORITY 0xA
+#define CAN1_RX0_IRQ_PRIORITY 0xA
+#define CAN1_RX1_IRQ_PRIORITY 0xA
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -50,6 +55,14 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef* hcan)
   GPIO_InitStruct.Alternate =  CANx_RX_AF;
   
   HAL_GPIO_Init(CANx_TX_GPIO_PORT, &GPIO_InitStruct);
+
+  /* CAN1 interrupt Init */
+    HAL_NVIC_SetPriority(CAN1_TX_IRQn, CAN1_TX_IRQ_PRIORITY, 0);
+    HAL_NVIC_EnableIRQ(CAN1_TX_IRQn);
+    HAL_NVIC_SetPriority(CAN1_RX0_IRQn, CAN1_RX0_IRQ_PRIORITY, 0);
+    HAL_NVIC_EnableIRQ(CAN1_RX0_IRQn);
+    HAL_NVIC_SetPriority(CAN1_RX1_IRQn, CAN1_RX1_IRQ_PRIORITY, 0);
+    HAL_NVIC_EnableIRQ(CAN1_RX1_IRQn);
 }
 
 /**
@@ -71,6 +84,10 @@ void HAL_CAN_MspDeInit(CAN_HandleTypeDef *hcan)
   HAL_GPIO_DeInit(CANx_TX_GPIO_PORT, CANx_TX_PIN);
   /* De-initialize the CAN1 RX GPIO pin */
   HAL_GPIO_DeInit(CANx_RX_GPIO_PORT, CANx_RX_PIN);
+
+  HAL_NVIC_DisableIRQ(CAN1_TX_IRQn);
+  HAL_NVIC_DisableIRQ(CAN1_RX0_IRQn);
+  HAL_NVIC_DisableIRQ(CAN1_RX1_IRQn);
 }
 
 void HAL_UART_MspInit(UART_HandleTypeDef *huart)
@@ -102,6 +119,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
   HAL_GPIO_Init(USARTx_RX_GPIO_PORT, &GPIO_InitStruct);
 }
 
+
 /**
   * @brief UART MSP De-Initialization
   *        This function frees the hardware resources used in this example:
@@ -127,10 +145,14 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef *huart)
 void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *htim) {
   if(htim->Instance == TIM6) {
     // Enable the clock that TIM4 is connected to. This might not be needed
-  __HAL_RCC_GPIOB_CLK_ENABLE();
+    __HAL_RCC_GPIOB_CLK_ENABLE();
 
     // Enable clock for the timer itself
     __HAL_RCC_TIM6_CLK_ENABLE();
+
+    // Set up interrupts for the timer
+    HAL_NVIC_SetPriority(TIM6_DAC_IRQn,TIM6_IRQ_PRIORITY,0);
+    HAL_NVIC_EnableIRQ(TIM6_DAC_IRQn);
   }
   
 }

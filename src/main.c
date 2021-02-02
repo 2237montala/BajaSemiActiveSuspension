@@ -153,9 +153,7 @@ int main (void){
         // Initalize timer device
         HAL_TIM_Base_Init(&msTimer);
 
-        // Set up interrupts for the timer
-        HAL_NVIC_SetPriority(TIM6_DAC_IRQn,TIM6_IRQ_PRIORITY,0);
-        HAL_NVIC_EnableIRQ(TIM6_DAC_IRQn);
+        
 
         // Enable interrupts for timer
         HAL_TIM_Base_Start_IT(&msTimer);
