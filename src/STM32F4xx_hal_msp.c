@@ -2,7 +2,7 @@
 #include "targetSpecific.h"
 #include "stm32f4xx_hal.h"
 
-// Interrupt prioritys
+// Interrupt priorities
 #define TIM6_IRQ_PRIORITY 0xF
 #define CAN1_TX_IRQ_PRIORITY 0xA
 #define CAN1_RX0_IRQ_PRIORITY 0xA

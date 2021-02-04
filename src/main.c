@@ -27,7 +27,6 @@ CAN_HandleTypeDef     CanHandle;
 UART_HandleTypeDef debugUartHandle;
 
 TIM_HandleTypeDef msTimer = {.Instance = TIM6};
-#define TIM6_IRQ_PRIORITY 0xF
 
 /* PID systems for the four shock controllers */
 
@@ -197,7 +196,6 @@ int main (void){
             timer1msCopy = CO_timer1ms;
             timer1msDiff = timer1msCopy - timer1msPrevious;
             timer1msPrevious = timer1msCopy;
-
 
             /* CANopen process */
             reset = CO_process(CO, (uint32_t)timer1msDiff*1000, NULL);
