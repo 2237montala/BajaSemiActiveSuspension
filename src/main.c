@@ -25,6 +25,14 @@ HAL_StatusTypeDef CAN_Init(void);
 /* UART handler declaration */
 UART_HandleTypeDef debugUartHandle;
 
+CAN_HandleTypeDef     CanHandle;
+uint8_t               TxData[8];
+uint8_t               RxData[8];
+uint32_t              TxMailbox;
+
+CAN_TxHeaderTypeDef TxHeader;
+CAN_RxHeaderTypeDef RxHeader;
+
 /* PID systems for the four shock controllers */
 
 volatile uint32_t micros = 0;
@@ -59,6 +67,41 @@ int main(void)
     /* Output a message on Hyperterminal using printf function */
     printf("UART Printf Example: retarget the C library printf function to the UART\r\n");
     
+    int x = 0;
+    while(true) {
+      //CAN_Polling();
+      x += 1;
+      TxHeader.StdId = 0x5;
+      TxHeader.RTR = CAN_RTR_DATA;
+      TxHeader.IDE = CAN_ID_STD;
+      TxHeader.TransmitGlobalTime = DISABLE;
+      
+      // char *dataToSend = "Hi\r\n";
+
+      // // TxData[0] = 0xCA;
+      // // TxData[1] = 0xFE;
+
+      // memcpy(TxData,dataToSend,8);
+      
+      // // Set Data Length Code
+      // TxHeader.DLC = strlen(dataToSend);
+
+      TxData[0] = 0xCA;
+      TxData[1] = 0xFE;
+      TxHeader.DLC = 2;
+
+      /* Request transmission */
+      if(HAL_CAN_AddTxMessage(&CanHandle, &TxHeader, TxData, &TxMailbox) != HAL_OK)
+      {
+        /* Transmission request Error */
+        Error_Handler();
+      }
+      
+      /* Wait transmission complete */
+      while(HAL_CAN_GetTxMailboxesFreeLevel(&CanHandle) != 3) {}
+
+      HAL_Delay(1000);
+    }
     
     BSP_LED_On(LED2);
     //__TIM6_CLK_ENABLE();
@@ -162,125 +205,123 @@ void createInitialDamperProfiles() {
 
 }
 
-// HAL_StatusTypeDef CAN_Init(void) {
-//   HAL_StatusTypeDef error = HAL_OK;
-//   CAN_FilterTypeDef  sFilterConfig;
+HAL_StatusTypeDef CAN_Init(void) {
+  HAL_StatusTypeDef error = HAL_OK;
+  CAN_FilterTypeDef  sFilterConfig;
   
-//   /*##-1- Configure the CAN peripheral #######################################*/
-//   CanHandle.Instance = CANx;
+  /*##-1- Configure the CAN peripheral #######################################*/
+  CanHandle.Instance = CANx;
     
-//   CanHandle.Init.TimeTriggeredMode = DISABLE;
-//   CanHandle.Init.AutoBusOff = DISABLE;
-//   CanHandle.Init.AutoWakeUp = DISABLE;
-//   CanHandle.Init.AutoRetransmission = ENABLE;
-//   CanHandle.Init.ReceiveFifoLocked = DISABLE;
-//   CanHandle.Init.TransmitFifoPriority = DISABLE;
-//   CanHandle.Init.Mode = CAN_MODE_NORMAL;
-//   CanHandle.Init.SyncJumpWidth = CAN_SJW_1TQ;
-//   CanHandle.Init.TimeSeg1 = CAN_BS1_12TQ;
-//   CanHandle.Init.TimeSeg2 = CAN_BS2_2TQ;
-//   CanHandle.Init.Prescaler = 6;
+  CanHandle.Init.TimeTriggeredMode = DISABLE;
+  CanHandle.Init.AutoBusOff = DISABLE;
+  CanHandle.Init.AutoWakeUp = DISABLE;
+  CanHandle.Init.AutoRetransmission = ENABLE;
+  CanHandle.Init.ReceiveFifoLocked = DISABLE;
+  CanHandle.Init.TransmitFifoPriority = DISABLE;
+  CanHandle.Init.Mode = CAN_MODE_NORMAL;
+  CanHandle.Init.SyncJumpWidth = CAN_SJW_1TQ;
+  CanHandle.Init.TimeSeg1 = CAN_BS1_12TQ;
+  CanHandle.Init.TimeSeg2 = CAN_BS2_2TQ;
+  CanHandle.Init.Prescaler = 6;
   
-//   // Used this website to get config values
-//   // http://www.bittiming.can-wiki.info/
-//   // Used a APB2 clock of 45 MHz
-//   // 500kbps use Sync of 1, Seg1 of 12, Seg2 of 2, and prescale of 6
-//   // 100kbps use Sync of 1, Seg1 of 15, Seg2 of 2, and prescale of 25
+  // Used this website to get config values
+  // http://www.bittiming.can-wiki.info/
+  // Used a APB2 clock of 45 MHz
+  // 500kbps use Sync of 1, Seg1 of 12, Seg2 of 2, and prescale of 6
+  // 100kbps use Sync of 1, Seg1 of 15, Seg2 of 2, and prescale of 25
 
-//   error = HAL_CAN_Init(&CanHandle);
+  error = HAL_CAN_Init(&CanHandle);
 
-//   // /*##-2- Configure the CAN Filter ###########################################*/
-//   // The default has the filter blocking nothing
-//   sFilterConfig.FilterBank = 0;
-//   sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
-//   sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
-//   sFilterConfig.FilterIdHigh = 0x0000;
-//   sFilterConfig.FilterIdLow = 0x0000;
-//   sFilterConfig.FilterMaskIdHigh = 0x0000;
-//   sFilterConfig.FilterMaskIdLow = 0x0000;
-//   sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
-//   sFilterConfig.FilterActivation = ENABLE;
-//   sFilterConfig.SlaveStartFilterBank = 14;
+  // /*##-2- Configure the CAN Filter ###########################################*/
+  // The default has the filter blocking nothing
+  sFilterConfig.FilterBank = 0;
+  sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
+  sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
+  sFilterConfig.FilterIdHigh = 0x0000;
+  sFilterConfig.FilterIdLow = 0x0000;
+  sFilterConfig.FilterMaskIdHigh = 0x0000;
+  sFilterConfig.FilterMaskIdLow = 0x0000;
+  sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
+  sFilterConfig.FilterActivation = ENABLE;
+  sFilterConfig.SlaveStartFilterBank = 14;
   
-//   if(error == HAL_OK) {
-//     error = HAL_CAN_ConfigFilter(&CanHandle, &sFilterConfig);
-//   }
+  if(error == HAL_OK) {
+    error = HAL_CAN_ConfigFilter(&CanHandle, &sFilterConfig);
+  }
 
-//   /*##-3- Start the CAN peripheral ###########################################*/
-//   if(error == HAL_OK) {
-//     error = HAL_CAN_Start(&CanHandle);
-//   }
-//   return error;
-// }
+  // Activate interrupts
+  if(error == HAL_OK) {
+    error =  HAL_CAN_ActivateNotification(&CanHandle, CAN_IT_RX_FIFO0_MSG_PENDING |
+                                                      CAN_IT_RX_FIFO1_MSG_PENDING | 
+                                                      CAN_IT_TX_MAILBOX_EMPTY);
+  } 
 
-// /**
-//   * @brief  Configures the CAN, transmit and receive by polling
-//   * @param  None
-//   * @retval PASSED if the reception is well done, FAILED in other case
-//   */
-// HAL_StatusTypeDef CAN_Polling(void)
-// {
-//   /*##-4- Start the Transmission process #####################################*/
-//   TxHeader.StdId = 0x20;
-//   TxHeader.RTR = CAN_RTR_DATA;
-//   TxHeader.IDE = CAN_ID_STD;
-//   TxHeader.TransmitGlobalTime = DISABLE;
+  /*##-3- Start the CAN peripheral ###########################################*/
+  if(error == HAL_OK) {
+    error = HAL_CAN_Start(&CanHandle);
+  }
+  return error;
+}
+
+/**
+  * @brief  Configures the CAN, transmit and receive by polling
+  * @param  None
+  * @retval PASSED if the reception is well done, FAILED in other case
+  */
+HAL_StatusTypeDef CAN_Polling(void)
+{
+  // /*##-4- Start the Transmission process #####################################*/
+  // TxHeader.StdId = 0x20;
+  // TxHeader.RTR = CAN_RTR_DATA;
+  // TxHeader.IDE = CAN_ID_STD;
+  // TxHeader.TransmitGlobalTime = DISABLE;
   
-//   // char *dataToSend = "Hi\r\n";
+  // // char *dataToSend = "Hi\r\n";
 
-//   // // TxData[0] = 0xCA;
-//   // // TxData[1] = 0xFE;
+  // // // TxData[0] = 0xCA;
+  // // // TxData[1] = 0xFE;
 
-//   // memcpy(TxData,dataToSend,8);
+  // // memcpy(TxData,dataToSend,8);
   
-//   // // Set Data Length Code
-//   // TxHeader.DLC = strlen(dataToSend);
+  // // // Set Data Length Code
+  // // TxHeader.DLC = strlen(dataToSend);
 
-//   TxData[0] = 0xCA;
-//   TxData[1] = 0xFE;
-//   TxHeader.DLC = 2;
+  // TxData[0] = 0xCA;
+  // TxData[1] = 0xFE;
+  // TxHeader.DLC = 2;
 
-//   /* Request transmission */
-//   if(HAL_CAN_AddTxMessage(&CanHandle, &TxHeader, TxData, &TxMailbox) != HAL_OK)
-//   {
-//     /* Transmission request Error */
-//     Error_Handler();
-//   }
+  // /* Request transmission */
+  // if(HAL_CAN_AddTxMessage(&CanHandle, &TxHeader, TxData, &TxMailbox) != HAL_OK)
+  // {
+  //   /* Transmission request Error */
+  //   Error_Handler();
+  // }
   
-//   /* Wait transmission complete */
-//   while(HAL_CAN_GetTxMailboxesFreeLevel(&CanHandle) != 3) {}
+  // /* Wait transmission complete */
+  // while(HAL_CAN_GetTxMailboxesFreeLevel(&CanHandle) != 3) {}
 
-//   /*##-5- Start the Reception process ########################################*/
+  // /*##-5- Start the Reception process ########################################*/
 
-//   // Wait for the shock controller to respond
-//   UART_putStringNL(&debugUartHandle, "Waiting for request");
-//   while(HAL_CAN_GetRxFifoFillLevel(&CanHandle, CAN_RX_FIFO0) == 0) {
-//     uint32_t tecError = CanHandle.Instance->ESR & CAN_ESR_TEC;
-//     if(tecError > 0) {
-//       printf("%d\r\n",tecError);
-//     }
-//   }
+  // Wait for the shock controller to respond
+  UART_putStringNL(&debugUartHandle, "Waiting for request");
+  while(HAL_CAN_GetRxFifoFillLevel(&CanHandle, CAN_RX_FIFO0) == 0) {
+    uint32_t tecError = CanHandle.Instance->ESR & CAN_ESR_TEC;
+    if(tecError > 0) {
+      printf("%d\r\n",tecError);
+    }
+  }
+  HAL_CAN_GetRxMessage(&CanHandle, CAN_RX_FIFO0, &RxHeader, RxData);
+  printf("Message ID: %x\r\n",RxHeader.StdId);
+  printf("Data 0: %x\r\n",RxData[0]);
+}
 
-//   UART_putStringNL(&debugUartHandle, "Got request");
-//   if(HAL_CAN_GetRxMessage(&CanHandle, CAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK)
-//   {
-//     /* Reception Error */
-//     Error_Handler();
-//   }
 
-//   if((RxHeader.StdId != 0x12)                     ||
-//      (RxHeader.RTR != CAN_RTR_DATA)               ||
-//      (RxHeader.IDE != CAN_ID_STD))
-//   {
-//     /* Rx message Error */
-//     return HAL_ERROR;
-//   }
+void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
+  HAL_CAN_GetRxMessage(&CanHandle, CAN_RX_FIFO0, &RxHeader, RxData);
+  printf("Message ID: %x\r\n",RxHeader.StdId);
+  printf("Data 0: %x\r\n",RxData[0]);
+}
 
-//   UART_putString(&debugUartHandle, "Got message from shock controller\r\n");
-//   printf("%d\r\n",RxData[0]);
-
-//   return HAL_OK; /* Test Passed */
-// }
 
 /**
   * @brief  System Clock Configuration

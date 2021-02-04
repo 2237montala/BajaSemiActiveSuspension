@@ -9,7 +9,9 @@
 /* Private variables ---------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
-
+#define CAN1_TX_IRQ_PRIORITY 0xA
+#define CAN1_RX0_IRQ_PRIORITY 0xA
+#define CAN1_RX1_IRQ_PRIORITY 0xA
 
 /**
   * @brief CAN MSP Initialization 
@@ -50,6 +52,14 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef* hcan)
   GPIO_InitStruct.Alternate =  CANx_RX_AF;
   
   HAL_GPIO_Init(CANx_TX_GPIO_PORT, &GPIO_InitStruct);
+
+  /* CAN1 interrupt Init */
+  HAL_NVIC_SetPriority(CAN1_TX_IRQn, CAN1_TX_IRQ_PRIORITY, 0);
+  HAL_NVIC_EnableIRQ(CAN1_TX_IRQn);
+  HAL_NVIC_SetPriority(CAN1_RX0_IRQn, CAN1_RX0_IRQ_PRIORITY, 1);
+  HAL_NVIC_EnableIRQ(CAN1_RX0_IRQn);
+  HAL_NVIC_SetPriority(CAN1_RX1_IRQn, CAN1_RX1_IRQ_PRIORITY, 2);
+  HAL_NVIC_EnableIRQ(CAN1_RX1_IRQn);
 }
 
 /**
