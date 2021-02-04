@@ -183,7 +183,7 @@ void CAN1_TX_IRQHandler(void)
 */
 void CAN2_RX0_IRQHandler(void)
 {
-  //HAL_CAN_IRQHandler(&CanHandle);
+  HAL_CAN_IRQHandler(&CanHandle);
 }
 
 /**
@@ -193,7 +193,7 @@ void CAN2_RX0_IRQHandler(void)
 */
 void CAN2_RX1_IRQHandler(void)
 {
-  //HAL_CAN_IRQHandler(&CanHandle);
+  HAL_CAN_IRQHandler(&CanHandle);
 }
 
 /**
@@ -203,7 +203,7 @@ void CAN2_RX1_IRQHandler(void)
 */
 void CAN2_TX_IRQHandler(void)
 {
-  //HAL_CAN_IRQHandler(&CanHandle);
+  HAL_CAN_IRQHandler(&CanHandle);
 }
 
 /**
