@@ -251,11 +251,14 @@ CO_ReturnError_t CO_CANrxBufferInit(
         buffer->CANrx_callback = CANrx_callback;
 
         /* CAN identifier and CAN mask, bit aligned with CAN module. Different on different microcontrollers. */
-        buffer->ident = ident & 0x07FFU;
-        if(rtr){
-            buffer->ident |= 0x0800U;
-        }
-        buffer->mask = (mask & 0x07FFU) | 0x0800U;
+        // Implementation comes from STM32 MX Driver for CANOpen
+        buffer->ident = (ident & 0x07FF) << 2;
+		if (rtr)
+		{
+			buffer->ident |= 0x02;
+		}
+		buffer->mask = (mask & 0x07FF) << 2;
+		buffer->mask |= 0x02;
 
         /* Set CAN hardware module filter and mask. */
         if(CANmodule->useCANrxFilters){
@@ -288,11 +291,13 @@ CO_CANtx_t *CO_CANtxBufferInit(
         /* get specific buffer */
         buffer = &CANmodule->txArray[index];
 
-        /* CAN identifier, DLC and rtr, bit aligned with CAN module transmit buffer.
-         * Microcontroller specific. */
-        buffer->ident = ((uint32_t)ident & 0x07FFU)
-                      | ((uint32_t)(((uint32_t)noOfBytes & 0xFU) << 12U))
-                      | ((uint32_t)(rtr ? 0x8000U : 0U));
+        /* CAN identifier, DLC and rtr, bit aligned with CAN module transmit buffer.*/
+        // Implementation comes from STM32 MX Driver for CANOpen
+		buffer->ident &= 0x7FF;
+		buffer->ident = ident << 2;
+		if (rtr) buffer->ident |= 0x02;
+
+		buffer->DLC = noOfBytes;
 
         buffer->bufferFull = false;
         buffer->syncFlag = syncFlag;
