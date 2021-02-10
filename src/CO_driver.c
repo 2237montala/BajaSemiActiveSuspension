@@ -93,6 +93,8 @@ void CO_CANsetNormalMode(CO_CANmodule_t *CANmodule){
 
         CANmodule->CANnormal = true;
         CANmodule->errinfo = CO_ERROR_NO;
+    } else {
+        CANmodule->errinfo = CO_ERROR_INVALID_STATE;
     }
     
 }
@@ -142,7 +144,6 @@ CO_ReturnError_t CO_CANmodule_init(
     for(i=0U; i<txSize; i++){
         txArray[i].bufferFull = false;
     }
-
 
     /* Configure CAN module registers */
     // Configuration is done with HAL
@@ -298,9 +299,8 @@ CO_CANtx_t *CO_CANtxBufferInit(
 		if (rtr) buffer->ident |= 0x02;
 
 		buffer->DLC = noOfBytes;
-
-        buffer->bufferFull = false;
-        buffer->syncFlag = syncFlag;
+		buffer->bufferFull = false;
+		buffer->syncFlag = syncFlag;
     }
 
     return buffer;
