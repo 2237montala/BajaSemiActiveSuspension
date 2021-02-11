@@ -99,7 +99,7 @@ int main (void){
 
         // Add one shock controller to the list of monitored notes
         uint32_t temp = (SHOCK_CONTROLLER_ONE_ID) << 16U;
-        temp |= 1000U;
+        temp |= 1100U;
         OD_consumerHeartbeatTime[0] = temp;
 
         log_printf("CANopenNode - Reset communication...\r\n");
@@ -213,10 +213,14 @@ int main (void){
             reset = CO_process(CO, (uint32_t)timer1msDiff*1000, NULL);
 
             /* Nonblocking application code may go here. */
+            if(CO->HBcons->allMonitoredOperational) {
+              startUpComplete = true;
+              BSP_LED_On(LED2);
+            }
+
             if(HAL_GetTick() - lastNMTCommandTime > nmtCommandDelay) {
               BSP_LED_Toggle(LED2);
               lastNMTCommandTime = HAL_GetTick();
-              //CO_NMT_sendCommand(CO->NMT,CO_NMT_ENTER_OPERATIONAL,SHOCK_CONTROLLER_ONE_ID);
             }
             
 
@@ -226,7 +230,7 @@ int main (void){
         }
 
 
-
+        printf("All nodes are ready\r\n");
 
         while(reset == CO_RESET_NOT){
 /* loop for normal program execution ******************************************/
