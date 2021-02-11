@@ -35,29 +35,14 @@
 
    typedef domain_t     DOMAIN;
 
-// #ifndef timeOfDay_t
-//     typedef union {
-//         unsigned long long ullValue;
-//         struct {
-//             unsigned long ms:28;
-//             unsigned reserved:4;
-//             unsigned days:16;
-//             unsigned reserved2:16;
-//         };
-//     }timeOfDay_t;
-// #endif
-
-//     typedef timeOfDay_t TIME_OF_DAY;
-//     typedef timeOfDay_t TIME_DIFFERENCE;
-
 
 /*******************************************************************************
    FILE INFO:
       FileName:     
       FileVersion:  1
-      CreationTime: 
-      CreationDate: 
-      CreatedBy:    
+      CreationTime: 11:01PM
+      CreationDate: 01-25-2021
+      CreatedBy:    Anthony Montalbano
 ******************************************************************************/
 
 
@@ -84,15 +69,13 @@
   #define CO_NO_TPDO                     1   //Associated objects: 18xx, 1Axx
   #define CO_NO_NMT_MASTER               0
 
-  #define CO_NO_TIME 0
+#define CO_NO_TIME 0
 #define CO_NO_GFC 0
 #define CO_NO_SRDO 0
-
-
 /*******************************************************************************
    OBJECT DICTIONARY
 *******************************************************************************/
-   #define CO_OD_NoOfElements             29
+   #define CO_OD_NoOfElements             30
 
 
 /*******************************************************************************
@@ -122,7 +105,7 @@
                UNSIGNED8      transmissionType;
                }              OD_RPDOCommunicationParameter_t;
 /*1600    */ typedef struct {
-               UNSIGNED8      numberOfMappedObjects;
+               UNSIGNED8      maxSubIndex;
                UNSIGNED32     mappedObject1;
                UNSIGNED32     mappedObject2;
                UNSIGNED32     mappedObject3;
@@ -228,6 +211,9 @@
         #define OD_1016_2_consumerHeartbeatTime_consumerHeartbeatTime 2
         #define OD_1016_3_consumerHeartbeatTime_consumerHeartbeatTime 3
         #define OD_1016_4_consumerHeartbeatTime_consumerHeartbeatTime 4
+
+/*1017 */
+        #define OD_1017_producerHeartbeatTime                       0x1017
 
 /*1018 */
         #define OD_1018_identity                                    0x1018
@@ -337,18 +323,18 @@ struct sCO_OD_ROM{
 /*1006      */ UNSIGNED32      communicationCyclePeriod;
 /*1007      */ UNSIGNED32      synchronousWindowLength;
 /*1008      */ VISIBLE_STRING  manufacturerDeviceName[11];
-/*1009      */ VISIBLE_STRING  manufacturerHardwareVersion[4];
-/*100a      */ VISIBLE_STRING  manufacturerSoftwareVersion[4];
+/*1009      */ VISIBLE_STRING  manufacturerHardwareVersion[3];
+/*100a      */ VISIBLE_STRING  manufacturerSoftwareVersion[3];
 /*1012      */ UNSIGNED32      COB_ID_TIME;
 /*1014      */ UNSIGNED32      COB_ID_EMCY;
 /*1015      */ UNSIGNED16      inhibitTimeEMCY;
 /*1016      */ UNSIGNED32      consumerHeartbeatTime[4];
+/*1017      */ UNSIGNED16      producerHeartbeatTime;
 /*1018      */ OD_identity_t   identity;
 /*1019      */ UNSIGNED8       synchronousCounterOverflowValue;
 /*1029      */ UNSIGNED8       errorBehavior[6];
 /*1200      */ OD_SDOServerParameter_t SDOServerParameter[1];
 /*1400      */ OD_RPDOCommunicationParameter_t RPDOCommunicationParameter[1];
-/*1600      */ OD_RPDOMappingParameter_t RPDOMappingParameter[1];
 /*1800      */ OD_TPDOCommunicationParameter_t TPDOCommunicationParameter[1];
 /*1a00      */ OD_TPDOMappingParameter_t TPDOMappingParameter[1];
 /*1f80      */ UNSIGNED32      NMTStartup;
@@ -368,6 +354,7 @@ struct sCO_OD_RAM{
 /*1010      */ UNSIGNED32      storeParameters[1];
 /*1011      */ UNSIGNED32      restoreDefaultParameters[1];
 /*1280      */ OD_SDOClientParameter_t SDOClientParameter[1];
+/*1600      */ OD_RPDOMappingParameter_t RPDOMappingParameter[1];
 /*2100      */ OCTET_STRING    errorStatusBits[10];
 
                UNSIGNED32     LastWord;
@@ -420,11 +407,11 @@ extern struct sCO_OD_EEPROM CO_OD_EEPROM;
 
 /*1009, Data Type: VISIBLE_STRING */
         #define OD_manufacturerHardwareVersion                      CO_OD_ROM.manufacturerHardwareVersion
-        #define ODL_manufacturerHardwareVersion_stringLength        4
+        #define ODL_manufacturerHardwareVersion_stringLength        3
 
 /*100a, Data Type: VISIBLE_STRING */
         #define OD_manufacturerSoftwareVersion                      CO_OD_ROM.manufacturerSoftwareVersion
-        #define ODL_manufacturerSoftwareVersion_stringLength        4
+        #define ODL_manufacturerSoftwareVersion_stringLength        3
 
 /*1010, Data Type: UNSIGNED32, Array[1] */
         #define OD_storeParameters                                  CO_OD_RAM.storeParameters
@@ -449,6 +436,9 @@ extern struct sCO_OD_EEPROM CO_OD_EEPROM;
         #define OD_consumerHeartbeatTime                            CO_OD_ROM.consumerHeartbeatTime
         #define ODL_consumerHeartbeatTime_arrayLength               4
         #define ODA_consumerHeartbeatTime_consumerHeartbeatTime     0
+
+/*1017, Data Type: UNSIGNED16 */
+        #define OD_producerHeartbeatTime                            CO_OD_ROM.producerHeartbeatTime
 
 /*1018, Data Type: identity_t */
         #define OD_identity                                         CO_OD_ROM.identity
@@ -476,7 +466,7 @@ extern struct sCO_OD_EEPROM CO_OD_EEPROM;
         #define OD_RPDOCommunicationParameter                       CO_OD_ROM.RPDOCommunicationParameter
 
 /*1600, Data Type: RPDOMappingParameter_t */
-        #define OD_RPDOMappingParameter                             CO_OD_ROM.RPDOMappingParameter
+        #define OD_RPDOMappingParameter                             CO_OD_RAM.RPDOMappingParameter
 
 /*1800, Data Type: TPDOCommunicationParameter_t */
         #define OD_TPDOCommunicationParameter                       CO_OD_ROM.TPDOCommunicationParameter
