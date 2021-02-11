@@ -169,9 +169,16 @@ typedef unsigned char           domain_t;
 
 
 /* Access to received CAN message */
-#define CO_CANrxMsg_readIdent(msg) ((uint16_t)0)
-#define CO_CANrxMsg_readDLC(msg)   ((uint8_t)0)
-#define CO_CANrxMsg_readData(msg)  ((uint8_t *)NULL)
+#define CO_CANrxMsg_readIdent(msg) ((uint16_t)((CO_CANrxMsg_t *)(msg))->ident)
+#define CO_CANrxMsg_readDLC(msg)   ((uint8_t)((CO_CANrxMsg_t *)(msg))->DLC)
+#define CO_CANrxMsg_readData(msg)  ((uint8_t *)((CO_CANrxMsg_t *)(msg))->data)
+
+// CAN message struct
+typedef struct {
+    uint32_t ident;
+    uint8_t DLC;
+    uint8_t data[8];
+} CO_CANrxMsg_t;
 
 /* Received message object */
 typedef struct {

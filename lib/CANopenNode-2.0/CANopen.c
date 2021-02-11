@@ -1023,14 +1023,14 @@ CO_NMT_reset_cmd_t CO_process(CO_t *co,
                   OD_inhibitTimeEMCY,
                   timerNext_us);
 
-    // /* NMT_Heartbeat */
-    // reset = CO_NMT_process(co->NMT,
-    //                        timeDifference_us,
-    //                        OD_producerHeartbeatTime,
-    //                        OD_NMTStartup,
-    //                        OD_errorRegister,
-    //                        OD_errorBehavior,
-    //                        timerNext_us);
+    /* NMT_Heartbeat */
+    reset = CO_NMT_process(co->NMT,
+                           timeDifference_us,
+                           OD_producerHeartbeatTime,
+                           OD_NMTStartup,
+                           OD_errorRegister,
+                           OD_errorBehavior,
+                           timerNext_us);
 
 #if CO_NO_TIME == 1
     /* TIME */

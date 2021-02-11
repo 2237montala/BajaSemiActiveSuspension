@@ -20,6 +20,8 @@ static void Error_Handler(void);
 static void setupDebugUart(UART_HandleTypeDef *huart, uint32_t buadRate);
 void ShockControllerBooted(uint8_t nodeId, uint8_t idx, void *object);
 void ShockControllerNMTChange(uint8_t nodeId,uint8_t idx, CO_NMT_internalState_t state, void *object);
+void ShockControllerHBReceived(uint8_t nodeId, uint8_t idx, void *object);
+void ShockControllerHBStopped(uint8_t nodeId, uint8_t idx, void *object);
 
 CAN_HandleTypeDef     CanHandle;
 
@@ -97,7 +99,7 @@ int main (void){
 
         // Add one shock controller to the list of monitored notes
         uint32_t temp = (SHOCK_CONTROLLER_ONE_ID) << 16U;
-        temp |= 100U;
+        temp |= 1000U;
         OD_consumerHeartbeatTime[0] = temp;
 
         log_printf("CANopenNode - Reset communication...\r\n");
@@ -174,11 +176,17 @@ int main (void){
 
         //CO_HBconsumer_initEntry(CO->HBcons,,SHOCK_CONTROLLER_ONE_ID,)
 
-        CO_HBconsumer_initCallbackRemoteReset(CO->HBcons,SHOCK_CONTROLLER_ONE_ID,
+        CO_HBconsumer_initCallbackRemoteReset(CO->HBcons,0,
                                               NULL,ShockControllerBooted);
 
-        CO_HBconsumer_initCallbackNmtChanged(CO->HBcons,SHOCK_CONTROLLER_ONE_ID,
+        CO_HBconsumer_initCallbackNmtChanged(CO->HBcons,0,
                                              NULL,ShockControllerNMTChange);
+
+        CO_HBconsumer_initCallbackHeartbeatStarted(CO->HBcons, 0,
+                                                  NULL,ShockControllerHBReceived);
+
+        CO_HBconsumer_initCallbackTimeout(CO->HBcons,0,NULL,ShockControllerHBStopped);
+
 
         /* start CAN */
         CO_CANsetNormalMode(CO->CANmodule[0]);
@@ -189,10 +197,39 @@ int main (void){
         log_printf("CANopenNode - Running...\r\n");
         fflush(stdout);
 
+        // Run startup sequence
+        bool startUpComplete = false;
+        uint16_t timer1msCopy, timer1msDiff;
+        uint32_t nmtCommandDelay = 5000;
+        uint32_t lastNMTCommandTime = HAL_GetTick();
+        while(reset == CO_RESET_NOT && !startUpComplete){
+            
+
+            timer1msCopy = CO_timer1ms;
+            timer1msDiff = timer1msCopy - timer1msPrevious;
+            timer1msPrevious = timer1msCopy;
+
+            /* CANopen process */
+            reset = CO_process(CO, (uint32_t)timer1msDiff*1000, NULL);
+
+            /* Nonblocking application code may go here. */
+            if(HAL_GetTick() - lastNMTCommandTime > nmtCommandDelay) {
+              BSP_LED_Toggle(LED2);
+              lastNMTCommandTime = HAL_GetTick();
+              //CO_NMT_sendCommand(CO->NMT,CO_NMT_ENTER_OPERATIONAL,SHOCK_CONTROLLER_ONE_ID);
+            }
+            
+
+            /* Process EEPROM */
+
+            /* optional sleep for short time */
+        }
+
+
+
+
         while(reset == CO_RESET_NOT){
 /* loop for normal program execution ******************************************/
-            uint16_t timer1msCopy, timer1msDiff;
-
             timer1msCopy = CO_timer1ms;
             timer1msDiff = timer1msCopy - timer1msPrevious;
             timer1msPrevious = timer1msCopy;
@@ -403,8 +440,18 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 void ShockControllerBooted(uint8_t nodeId, uint8_t idx, void *object) {
   printf("Shock controller node %d booted\r\n",nodeId);
+  CO_NMT_sendCommand(CO->NMT,CO_NMT_ENTER_OPERATIONAL,nodeId);
 }
 
 void ShockControllerNMTChange(uint8_t nodeId,uint8_t idx, CO_NMT_internalState_t state, void *object) {
-  printf("Shock controller node %d NMT changed\r\n",nodeId);
+  printf("Shock controller node %d NMT changed to %d\r\n",nodeId,state);
 }
+
+void ShockControllerHBReceived(uint8_t nodeId, uint8_t idx, void *object) {
+  printf("Shock controller node %d HB started\r\n",nodeId);
+}
+
+void ShockControllerHBStopped(uint8_t nodeId, uint8_t idx, void *object) {
+  printf("Shock controller node %d HB stopped\r\n",nodeId);
+}
+

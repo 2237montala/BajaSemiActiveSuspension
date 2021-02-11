@@ -449,12 +449,6 @@ void CO_CANmodule_process(CO_CANmodule_t *CANmodule) {
 
 
 /******************************************************************************/
-typedef struct {
-    uint32_t ident;
-    uint8_t DLC;
-    uint8_t data[8];
-} CO_CANrxMsg_t;
-
 void CO_CANInterruptRx(CO_CANmodule_t *CANmodule) {
     CO_CANrxMsg_t rcvMsg;      /* pointer to received message in CAN module */
     uint16_t index;             /* index of received message */
@@ -471,7 +465,7 @@ void CO_CANInterruptRx(CO_CANmodule_t *CANmodule) {
     rcvMsg.DLC = RxHeader.DLC;
     rcvMsg.ident = RxHeader.StdId;
 
-    rcvMsgIdent = rcvMsg.ident;
+    rcvMsgIdent = rcvMsg.ident << 2;
     if(CANmodule->useCANrxFilters){
         /* CAN module filters are used. Message with known 11-bit identifier has */
         /* been received */
