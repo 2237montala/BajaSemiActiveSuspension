@@ -13,7 +13,7 @@
         <ProfileTechnology>CANopen</ProfileTechnology>
       </ISO15745Reference>
     </ProfileHeader>
-    <ProfileBody xsi:type="ProfileBody_Device_CANopen" formatName="CANopen" formatVersion="1.0" fileName="" fileCreator="Anthony Montalbano" fileCreationDate="2021-01-25" fileCreationTime="23:01:25.0000000-06:00" fileModificationDate="2021-01-28" fileModificationTime="10:09:19.7584325-06:00" fileModifiedBy="" fileVersion="1" supportedLanguages="en">
+    <ProfileBody xsi:type="ProfileBody_Device_CANopen" formatName="CANopen" formatVersion="1.0" fileName="" fileCreator="Anthony Montalbano" fileCreationDate="2021-01-25" fileCreationTime="23:01:25.0000000-06:00" fileModificationDate="2021-01-28" fileModificationTime="23:01:25.0000000-06:00" fileModifiedBy="" fileVersion="1" supportedLanguages="en">
       <DeviceIdentity>
         <vendorName readOnly="true" />
         <vendorID>0</vendorID>
@@ -337,6 +337,14 @@ bit 24-31: set to 0</description>
             </denotation>
             <defaultValue value="0x00000000" />
           </parameter>
+          <parameter uniqueID="UID_PARAM_1017" access="readWrite">
+            <label lang="en">Producer Heartbeat Time</label>
+            <description lang="en">bit 0-15: Heartbeat producer time in ms (0 = disable transmission)</description>
+            <denotation>
+              <label lang="en" />
+            </denotation>
+            <defaultValue value="0" />
+          </parameter>
           <parameter uniqueID="UID_PARAM_1018" access="readWrite">
             <label lang="en">Identity</label>
             <description lang="en">max sub-index
@@ -640,13 +648,7 @@ value = 255:     asynchronous</description>
           </parameter>
           <parameter uniqueID="UID_PARAM_1600" access="readWrite">
             <label lang="en">RPDO mapping parameter</label>
-            <description lang="en">0x1600 - 0x17FF RPDO mapping parameter (To change mapping, 'Number of mapped objects' must be set to 0)
-Number of mapped objects
-
-mapped object  (subindex 1...8)
-bit  0-7:  data length in bits
-bit 8-15:  subindex from OD
-bit 16-31: index from OD</description>
+            <description lang="en" />
             <denotation>
               <label lang="en" />
             </denotation>
@@ -654,6 +656,70 @@ bit 16-31: index from OD</description>
           </parameter>
           <parameter uniqueID="UID_PARAM_160000" access="read">
             <label lang="en">max sub-index</label>
+            <description lang="en" />
+            <denotation>
+              <label lang="en" />
+            </denotation>
+            <defaultValue value="8" />
+          </parameter>
+          <parameter uniqueID="UID_PARAM_160001" access="readWrite">
+            <label lang="en">mapped object 1</label>
+            <description lang="en" />
+            <denotation>
+              <label lang="en" />
+            </denotation>
+            <defaultValue value="0" />
+          </parameter>
+          <parameter uniqueID="UID_PARAM_160002" access="readWrite">
+            <label lang="en">mapped object 2</label>
+            <description lang="en" />
+            <denotation>
+              <label lang="en" />
+            </denotation>
+            <defaultValue value="0" />
+          </parameter>
+          <parameter uniqueID="UID_PARAM_160003" access="readWrite">
+            <label lang="en">mapped object 3</label>
+            <description lang="en" />
+            <denotation>
+              <label lang="en" />
+            </denotation>
+            <defaultValue value="0" />
+          </parameter>
+          <parameter uniqueID="UID_PARAM_160004" access="readWrite">
+            <label lang="en">mapped object 4</label>
+            <description lang="en" />
+            <denotation>
+              <label lang="en" />
+            </denotation>
+            <defaultValue value="0" />
+          </parameter>
+          <parameter uniqueID="UID_PARAM_160005" access="readWrite">
+            <label lang="en">mapped object 5</label>
+            <description lang="en" />
+            <denotation>
+              <label lang="en" />
+            </denotation>
+            <defaultValue value="0" />
+          </parameter>
+          <parameter uniqueID="UID_PARAM_160006" access="readWrite">
+            <label lang="en">mapped object 6</label>
+            <description lang="en" />
+            <denotation>
+              <label lang="en" />
+            </denotation>
+            <defaultValue value="0" />
+          </parameter>
+          <parameter uniqueID="UID_PARAM_160007" access="readWrite">
+            <label lang="en">mapped object 7</label>
+            <description lang="en" />
+            <denotation>
+              <label lang="en" />
+            </denotation>
+            <defaultValue value="0" />
+          </parameter>
+          <parameter uniqueID="UID_PARAM_160008" access="readWrite">
+            <label lang="en">mapped object 8</label>
             <description lang="en" />
             <denotation>
               <label lang="en" />
@@ -772,7 +838,7 @@ bit 16-31: index from OD</description>
             <denotation>
               <label lang="en" />
             </denotation>
-            <defaultValue value="2" />
+            <defaultValue value="0" />
           </parameter>
           <parameter uniqueID="UID_PARAM_1a0001" access="readWrite">
             <label lang="en">mapped object 1</label>
@@ -780,7 +846,7 @@ bit 16-31: index from OD</description>
             <denotation>
               <label lang="en" />
             </denotation>
-            <defaultValue value="0x60000108" />
+            <defaultValue value="0" />
           </parameter>
           <parameter uniqueID="UID_PARAM_1a0002" access="readWrite">
             <label lang="en">mapped object 2</label>
@@ -788,7 +854,7 @@ bit 16-31: index from OD</description>
             <denotation>
               <label lang="en" />
             </denotation>
-            <defaultValue value="0x60000208" />
+            <defaultValue value="0" />
           </parameter>
           <parameter uniqueID="UID_PARAM_1a0003" access="readWrite">
             <label lang="en">mapped object 3</label>
@@ -949,358 +1015,6 @@ Valid values are in [kbps]:
             </denotation>
             <defaultValue value="250" />
           </parameter>
-          <parameter uniqueID="UID_PARAM_6000" access="read">
-            <label lang="en">Read input 8 bit</label>
-            <description lang="en">Digital inputs from hardware.</description>
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_600000" access="read">
-            <label lang="en">max sub-index</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="8" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_600001" access="readWrite">
-            <label lang="en">Input</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0x00" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_600002" access="readWrite">
-            <label lang="en">Input</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0x00" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_600003" access="readWrite">
-            <label lang="en">Input</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0x00" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_600004" access="readWrite">
-            <label lang="en">Input</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0x00" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_600005" access="readWrite">
-            <label lang="en">Input</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0x00" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_600006" access="readWrite">
-            <label lang="en">Input</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0x00" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_600007" access="readWrite">
-            <label lang="en">Input</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0x00" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_600008" access="readWrite">
-            <label lang="en">Input</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0x00" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_6200" access="readWrite">
-            <label lang="en">Write output 8 bit</label>
-            <description lang="en">Digital outputs on hardware.</description>
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_620000" access="read">
-            <label lang="en">max sub-index</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="8" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_620001" access="readWrite">
-            <label lang="en">Output</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0x00" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_620002" access="readWrite">
-            <label lang="en">Output</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0x00" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_620003" access="readWrite">
-            <label lang="en">Output</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0x00" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_620004" access="readWrite">
-            <label lang="en">Output</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0x00" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_620005" access="readWrite">
-            <label lang="en">Output</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0x00" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_620006" access="readWrite">
-            <label lang="en">Output</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0x00" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_620007" access="readWrite">
-            <label lang="en">Output</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0x00" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_620008" access="readWrite">
-            <label lang="en">Output</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0x00" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_6401" access="read">
-            <label lang="en">Read analogue input 16 bit</label>
-            <description lang="en">Analogue inputs from hardware. The integer value is left adjusted.</description>
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_640100" access="read">
-            <label lang="en">max sub-index</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="12" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_640101" access="readWrite">
-            <label lang="en">Input</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_640102" access="readWrite">
-            <label lang="en">Input</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_640103" access="readWrite">
-            <label lang="en">Input</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_640104" access="readWrite">
-            <label lang="en">Input</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_640105" access="readWrite">
-            <label lang="en">Input</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_640106" access="readWrite">
-            <label lang="en">Input</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_640107" access="readWrite">
-            <label lang="en">Input</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_640108" access="readWrite">
-            <label lang="en">Input</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_640109" access="readWrite">
-            <label lang="en">Input</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_64010a" access="readWrite">
-            <label lang="en">Input</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_64010b" access="readWrite">
-            <label lang="en">Input</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_64010c" access="readWrite">
-            <label lang="en">Input</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_6411" access="readWrite">
-            <label lang="en">Write analogue output 16 bit</label>
-            <description lang="en">Analogue outputs on hardware. The integer value is left adjusted.</description>
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_641100" access="read">
-            <label lang="en">max sub-index</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="8" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_641101" access="readWrite">
-            <label lang="en">Output</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_641102" access="readWrite">
-            <label lang="en">Output</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_641103" access="readWrite">
-            <label lang="en">Output</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_641104" access="readWrite">
-            <label lang="en">Output</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_641105" access="readWrite">
-            <label lang="en">Output</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_641106" access="readWrite">
-            <label lang="en">Output</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_641107" access="readWrite">
-            <label lang="en">Output</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0" />
-          </parameter>
-          <parameter uniqueID="UID_PARAM_641108" access="readWrite">
-            <label lang="en">Output</label>
-            <description lang="en" />
-            <denotation>
-              <label lang="en" />
-            </denotation>
-            <defaultValue value="0" />
-          </parameter>
         </parameterList>
       </ApplicationProcess>
     </ProfileBody>
@@ -1352,13 +1066,14 @@ Valid values are in [kbps]:
           <CANopenObject index="1012" name="COB-ID TIME" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1012" />
           <CANopenObject index="1014" name="COB-ID EMCY" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1014" />
           <CANopenObject index="1015" name="inhibit time EMCY" objectType="7" dataType="0006" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1015" />
-          <CANopenObject index="1016" name="Consumer heartbeat time" objectType="8" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1016" subNumber="5">
-            <CANopenSubObject subIndex="0000" name="max sub-index" objectType="7" dataType="0005" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_101600" />
-            <CANopenSubObject subIndex="0001" name="Consumer heartbeat time" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_101601" />
-            <CANopenSubObject subIndex="0002" name="Consumer heartbeat time" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_101602" />
-            <CANopenSubObject subIndex="0003" name="Consumer heartbeat time" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_101603" />
-            <CANopenSubObject subIndex="0004" name="Consumer heartbeat time" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_101604" />
+          <CANopenObject index="1016" name="Consumer heartbeat time" objectType="8" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1016" subNumber="5">
+            <CANopenSubObject subIndex="0000" name="max sub-index" objectType="7" dataType="0005" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_101600" />
+            <CANopenSubObject subIndex="0001" name="Consumer heartbeat time" objectType="7" dataType="0000" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_101601" />
+            <CANopenSubObject subIndex="0002" name="Consumer heartbeat time" objectType="7" dataType="0000" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_101602" />
+            <CANopenSubObject subIndex="0003" name="Consumer heartbeat time" objectType="7" dataType="0000" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_101603" />
+            <CANopenSubObject subIndex="0004" name="Consumer heartbeat time" objectType="7" dataType="0000" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_101604" />
           </CANopenObject>
+          <CANopenObject index="1017" name="Producer Heartbeat Time" objectType="7" dataType="0006" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1017" />
           <CANopenObject index="1018" name="Identity" objectType="9" dataType="0023" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1018" subNumber="5">
             <CANopenSubObject subIndex="0000" name="max sub-index" objectType="7" dataType="0005" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_101800" />
             <CANopenSubObject subIndex="0001" name="Vendor-ID" objectType="7" dataType="0007" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_101801" />
@@ -1392,8 +1107,16 @@ Valid values are in [kbps]:
             <CANopenSubObject subIndex="0001" name="COB-ID used by RPDO" objectType="7" dataType="0007" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_140001" />
             <CANopenSubObject subIndex="0002" name="transmission type" objectType="7" dataType="0005" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_140002" />
           </CANopenObject>
-          <CANopenObject index="1600" name="RPDO mapping parameter" objectType="9" dataType="0005" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1600" subNumber="1">
-            <CANopenSubObject subIndex="0000" name="max sub-index" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160000" />
+          <CANopenObject index="1600" name="RPDO mapping parameter" objectType="9" dataType="0021" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="RAM" PDOmapping="no" uniqueIDRef="UID_PARAM_1600" subNumber="9">
+            <CANopenSubObject subIndex="0000" name="max sub-index" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160000" />
+            <CANopenSubObject subIndex="0001" name="mapped object 1" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160001" />
+            <CANopenSubObject subIndex="0002" name="mapped object 2" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160002" />
+            <CANopenSubObject subIndex="0003" name="mapped object 3" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160003" />
+            <CANopenSubObject subIndex="0004" name="mapped object 4" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160004" />
+            <CANopenSubObject subIndex="0005" name="mapped object 5" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160005" />
+            <CANopenSubObject subIndex="0006" name="mapped object 6" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160006" />
+            <CANopenSubObject subIndex="0007" name="mapped object 7" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160007" />
+            <CANopenSubObject subIndex="0008" name="mapped object 8" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160008" />
           </CANopenObject>
           <CANopenObject index="1800" name="TPDO communication parameter" objectType="9" dataType="0020" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1800" subNumber="7">
             <CANopenSubObject subIndex="0000" name="max sub-index" objectType="7" dataType="0005" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_180000" />
@@ -1405,9 +1128,9 @@ Valid values are in [kbps]:
             <CANopenSubObject subIndex="0006" name="SYNC start value" objectType="7" dataType="0005" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_180006" />
           </CANopenObject>
           <CANopenObject index="1A00" name="TPDO mapping parameter" objectType="9" dataType="0021" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1a00" subNumber="9">
-            <CANopenSubObject subIndex="0000" name="Number of mapped objects" objectType="7" dataType="0005" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_1a0000" />
-            <CANopenSubObject subIndex="0001" name="mapped object 1" objectType="7" dataType="0007" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_1a0001" />
-            <CANopenSubObject subIndex="0002" name="mapped object 2" objectType="7" dataType="0007" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_1a0002" />
+            <CANopenSubObject subIndex="0000" name="Number of mapped objects" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_1a0000" />
+            <CANopenSubObject subIndex="0001" name="mapped object 1" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_1a0001" />
+            <CANopenSubObject subIndex="0002" name="mapped object 2" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_1a0002" />
             <CANopenSubObject subIndex="0003" name="mapped object 3" objectType="7" dataType="0007" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_1a0003" />
             <CANopenSubObject subIndex="0004" name="mapped object 4" objectType="7" dataType="0007" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_1a0004" />
             <CANopenSubObject subIndex="0005" name="mapped object 5" objectType="7" dataType="0007" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_1a0005" />
@@ -1419,54 +1142,6 @@ Valid values are in [kbps]:
           <CANopenObject index="2100" name="Error status bits" objectType="7" dataType="000A" lowLimit="" highLimit="" accessType="ro" actualValue="" edseditor_extenstion_storagelocation="RAM" PDOmapping="optional" uniqueIDRef="UID_PARAM_2100" />
           <CANopenObject index="2101" name="CAN node ID" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_2101" />
           <CANopenObject index="2102" name="CAN bit rate" objectType="7" dataType="0006" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_2102" />
-          <CANopenObject index="6000" name="Read input 8 bit" objectType="8" dataType="0005" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" edseditor_extenstion_storagelocation="RAM" PDOmapping="optional" uniqueIDRef="UID_PARAM_6000" subNumber="9">
-            <CANopenSubObject subIndex="0000" name="max sub-index" objectType="7" dataType="0005" accessType="ro" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_600000" />
-            <CANopenSubObject subIndex="0001" name="Input" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_600001" />
-            <CANopenSubObject subIndex="0002" name="Input" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_600002" />
-            <CANopenSubObject subIndex="0003" name="Input" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_600003" />
-            <CANopenSubObject subIndex="0004" name="Input" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_600004" />
-            <CANopenSubObject subIndex="0005" name="Input" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_600005" />
-            <CANopenSubObject subIndex="0006" name="Input" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_600006" />
-            <CANopenSubObject subIndex="0007" name="Input" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_600007" />
-            <CANopenSubObject subIndex="0008" name="Input" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_600008" />
-          </CANopenObject>
-          <CANopenObject index="6200" name="Write output 8 bit" objectType="8" dataType="0005" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" edseditor_extenstion_storagelocation="RAM" PDOmapping="optional" uniqueIDRef="UID_PARAM_6200" subNumber="9">
-            <CANopenSubObject subIndex="0000" name="max sub-index" objectType="7" dataType="0005" accessType="ro" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_620000" />
-            <CANopenSubObject subIndex="0001" name="Output" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_620001" />
-            <CANopenSubObject subIndex="0002" name="Output" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_620002" />
-            <CANopenSubObject subIndex="0003" name="Output" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_620003" />
-            <CANopenSubObject subIndex="0004" name="Output" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_620004" />
-            <CANopenSubObject subIndex="0005" name="Output" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_620005" />
-            <CANopenSubObject subIndex="0006" name="Output" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_620006" />
-            <CANopenSubObject subIndex="0007" name="Output" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_620007" />
-            <CANopenSubObject subIndex="0008" name="Output" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_620008" />
-          </CANopenObject>
-          <CANopenObject index="6401" name="Read analogue input 16 bit" objectType="8" dataType="0003" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" edseditor_extenstion_storagelocation="RAM" PDOmapping="optional" uniqueIDRef="UID_PARAM_6401" subNumber="13">
-            <CANopenSubObject subIndex="0000" name="max sub-index" objectType="7" dataType="0005" accessType="ro" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_640100" />
-            <CANopenSubObject subIndex="0001" name="Input" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_640101" />
-            <CANopenSubObject subIndex="0002" name="Input" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_640102" />
-            <CANopenSubObject subIndex="0003" name="Input" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_640103" />
-            <CANopenSubObject subIndex="0004" name="Input" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_640104" />
-            <CANopenSubObject subIndex="0005" name="Input" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_640105" />
-            <CANopenSubObject subIndex="0006" name="Input" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_640106" />
-            <CANopenSubObject subIndex="0007" name="Input" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_640107" />
-            <CANopenSubObject subIndex="0008" name="Input" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_640108" />
-            <CANopenSubObject subIndex="0009" name="Input" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_640109" />
-            <CANopenSubObject subIndex="000A" name="Input" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_64010a" />
-            <CANopenSubObject subIndex="000B" name="Input" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_64010b" />
-            <CANopenSubObject subIndex="000C" name="Input" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_64010c" />
-          </CANopenObject>
-          <CANopenObject index="6411" name="Write analogue output 16 bit" objectType="8" dataType="0003" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" edseditor_extenstion_storagelocation="RAM" PDOmapping="optional" uniqueIDRef="UID_PARAM_6411" subNumber="9">
-            <CANopenSubObject subIndex="0000" name="max sub-index" objectType="7" dataType="0005" accessType="ro" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_641100" />
-            <CANopenSubObject subIndex="0001" name="Output" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_641101" />
-            <CANopenSubObject subIndex="0002" name="Output" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_641102" />
-            <CANopenSubObject subIndex="0003" name="Output" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_641103" />
-            <CANopenSubObject subIndex="0004" name="Output" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_641104" />
-            <CANopenSubObject subIndex="0005" name="Output" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_641105" />
-            <CANopenSubObject subIndex="0006" name="Output" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_641106" />
-            <CANopenSubObject subIndex="0007" name="Output" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_641107" />
-            <CANopenSubObject subIndex="0008" name="Output" objectType="7" dataType="0000" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_641108" />
-          </CANopenObject>
         </CANopenObjectList>
         <dummyUsage>
           <dummy entry="Dummy0001=0" />
