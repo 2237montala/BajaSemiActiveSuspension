@@ -482,7 +482,7 @@ extern "C" {
 #ifdef CO_DOXYGEN
 #define CO_CONFIG_LEDS (CO_CONFIG_LEDS_ENABLE)
 #endif
-#define CO_CONFIG_LEDS_ENABLE 0x00
+#define CO_CONFIG_LEDS_ENABLE 0x01
 /** @} */ /* CO_STACK_CONFIG_LEDS */
 
 

@@ -23,6 +23,7 @@ void ShockControllerNMTChange(uint8_t nodeId,uint8_t idx, CO_NMT_internalState_t
 void ShockControllerHBReceived(uint8_t nodeId, uint8_t idx, void *object);
 void ShockControllerHBStopped(uint8_t nodeId, uint8_t idx, void *object);
 
+// Handle for CAN object linked with CO and Hal
 CAN_HandleTypeDef     CanHandle;
 
 /* UART handler declaration */
@@ -30,9 +31,13 @@ UART_HandleTypeDef debugUartHandle;
 
 TIM_HandleTypeDef msTimer = {.Instance = TIM6};
 
+// LED values and pins
+#define GREEN_LED_PIN D8
+#define RED_LED_PIN D9
+
+
 /* PID systems for the four shock controllers */
 
-volatile uint32_t micros = 0;
 
 #define TMR_TASK_INTERVAL   (1000)          /* Interval of tmrTask thread in microseconds */
 #define INCREMENT_1MS(var)  (var++)         /* Increment 1ms variable in tmrTask */
@@ -57,7 +62,8 @@ int setup() {
   setupDebugUart(&debugUartHandle,115200);
 
   BSP_LED_Init(LED2);
-
+  BspGpioInitOutput(GREEN_LED_PIN);
+  BspGpioInitOutput(RED_LED_PIN);
   //CAN_Init();
 
   return 0;
@@ -212,14 +218,23 @@ int main (void){
             /* CANopen process */
             reset = CO_process(CO, (uint32_t)timer1msDiff*1000, NULL);
 
+            // Handle LED Updates
+            LED_red = CO_LED_RED(CO->LEDs, CO_LED_CANopen);
+            LED_green = CO_LED_GREEN(CO->LEDs, CO_LED_CANopen);
+
+            BspGpioWrite(GREEN_LED_PIN,LED_green);
+            BspGpioWrite(RED_LED_PIN,LED_red);
+
             /* Nonblocking application code may go here. */
             if(CO->HBcons->allMonitoredOperational) {
-              startUpComplete = true;
-              BSP_LED_On(LED2);
+              //startUpComplete = true;
+              //BSP_LED_On(LED2);
             }
 
             if(HAL_GetTick() - lastNMTCommandTime > nmtCommandDelay) {
               BSP_LED_Toggle(LED2);
+              //BspGpioToggle(GREEN_LED_PIN);
+              //BspGpioToggle(RED_LED_PIN);
               lastNMTCommandTime = HAL_GetTick();
             }
             
