@@ -106,6 +106,13 @@ GPIO_TypeDef* BUTTON_PORT[BUTTONn] = {KEY_BUTTON_GPIO_PORT};
 const uint16_t BUTTON_PIN[BUTTONn] = {KEY_BUTTON_PIN}; 
 const uint8_t BUTTON_IRQn[BUTTONn] = {KEY_BUTTON_EXTI_IRQn};
 
+GPIO_TypeDef* GPIO_PORT_Dx[] = {D13_GPIO_PORT,D12_GPIO_PORT,D11_GPIO_PORT,D10_GPIO_PORT,
+                                D9_GPIO_PORT,D8_GPIO_PORT,D7_GPIO_PORT, D6_GPIO_PORT,
+                                D5_GPIO_PORT,D4_GPIO_PORT,D3_GPIO_PORT,D2_GPIO_PORT};
+
+const uint16_t GPIO_PIN_Dx[] = {D13_PIN,D12_PIN,D11_PIN,D10_PIN,D9_PIN,D8_PIN,D7_PIN,D6_PIN,D5_PIN,
+                               D4_PIN,D3_PIN,D2_PIN};
+
 /**
  * @brief BUS variables
  */
@@ -179,6 +186,59 @@ uint32_t BSP_GetVersion(void)
   return __STM32F4xx_NUCLEO_BSP_VERSION;
 }
 
+void BspGpioInitOutput(enum ArduinoDigitalPins digitalPin) {
+  if(digitalPin >= 0 || digitalPin < Count){
+    GPIO_InitTypeDef  GPIO_InitStruct;
+  
+    /* Enable the GPIO_LED Clock */
+    //uint16_t pin = GPIO_PIN_Dx[digitalPin];
+
+    if(GPIO_PORT_Dx[digitalPin] == GPIOA) {
+      Dx_GPIOA_CLK_ENABLE();
+    } else if(GPIO_PORT_Dx[digitalPin] == GPIOB) {
+      Dx_GPIOB_CLK_ENABLE();
+    } else if(GPIO_PORT_Dx[digitalPin] == GPIOC) {
+      Dx_GPIOC_CLK_ENABLE();
+    } else if(GPIO_PORT_Dx[digitalPin] == GPIOD) {
+      Dx_GPIOD_CLK_ENABLE();
+    }
+    
+    /* Configure the GPIO_LED pin */
+    GPIO_InitStruct.Pin = GPIO_PIN_Dx[digitalPin];
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FAST;
+    
+    HAL_GPIO_Init(GPIO_PORT_Dx[digitalPin], &GPIO_InitStruct);
+    
+    HAL_GPIO_WritePin(GPIO_PORT_Dx[digitalPin], GPIO_PIN_Dx[digitalPin], GPIO_PIN_RESET); 
+  }
+}
+
+void BspGpioDeinit(enum ArduinoDigitalPins digitalPin) {
+  if(digitalPin >= 0 || digitalPin < Count){
+    GPIO_InitTypeDef  gpio_init_structure;
+
+    /* Turn off LED */
+    HAL_GPIO_WritePin(GPIO_PORT_Dx[digitalPin], GPIO_PIN_Dx[digitalPin], GPIO_PIN_RESET);
+    /* DeInit the GPIO_LED pin */
+    gpio_init_structure.Pin = GPIO_PIN_Dx[digitalPin];
+    HAL_GPIO_DeInit(GPIO_PORT_Dx[digitalPin], gpio_init_structure.Pin);
+  }
+}
+
+void BspGpioWrite(enum ArduinoDigitalPins digitalPin, uint8_t outputHigh) {
+  if(outputHigh == 0) {
+    HAL_GPIO_WritePin(GPIO_PORT_Dx[digitalPin], GPIO_PIN_Dx[digitalPin], GPIO_PIN_RESET);   
+  } else {
+    HAL_GPIO_WritePin(GPIO_PORT_Dx[digitalPin], GPIO_PIN_Dx[digitalPin], GPIO_PIN_SET); 
+  }
+}
+
+void BspGpioToggle(enum ArduinoDigitalPins digitalPin) {
+  HAL_GPIO_TogglePin(GPIO_PORT_Dx[digitalPin], GPIO_PIN_Dx[digitalPin]);
+}
+
 /**
   * @brief  Configures LED GPIO.
   * @param  Led: Specifies the Led to be configured. 
@@ -187,20 +247,21 @@ uint32_t BSP_GetVersion(void)
   */
 void BSP_LED_Init(Led_TypeDef Led)
 {
-  GPIO_InitTypeDef  GPIO_InitStruct;
+  // GPIO_InitTypeDef  GPIO_InitStruct;
   
-  /* Enable the GPIO_LED Clock */
-  LEDx_GPIO_CLK_ENABLE(Led);
+  // /* Enable the GPIO_LED Clock */
+  // LEDx_GPIO_CLK_ENABLE(Led);
   
-  /* Configure the GPIO_LED pin */
-  GPIO_InitStruct.Pin = GPIO_PIN[Led];
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FAST;
+  // /* Configure the GPIO_LED pin */
+  // GPIO_InitStruct.Pin = GPIO_PIN[Led];
+  // GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  // GPIO_InitStruct.Pull = GPIO_NOPULL;
+  // GPIO_InitStruct.Speed = GPIO_SPEED_FAST;
   
-  HAL_GPIO_Init(GPIO_PORT[Led], &GPIO_InitStruct);
+  // HAL_GPIO_Init(GPIO_PORT[Led], &GPIO_InitStruct);
   
-  HAL_GPIO_WritePin(GPIO_PORT[Led], GPIO_PIN[Led], GPIO_PIN_RESET); 
+  // HAL_GPIO_WritePin(GPIO_PORT[Led], GPIO_PIN[Led], GPIO_PIN_RESET); 
+  BspGpioInitOutput(Led);
 }
 
 /**
@@ -229,7 +290,8 @@ void BSP_LED_DeInit(Led_TypeDef Led)
   */
 void BSP_LED_On(Led_TypeDef Led)
 {
-  HAL_GPIO_WritePin(GPIO_PORT[Led], GPIO_PIN[Led], GPIO_PIN_SET); 
+  BspGpioWrite(Led,GPIO_PIN_SET);
+  //HAL_GPIO_WritePin(GPIO_PORT[Led], GPIO_PIN[Led], GPIO_PIN_SET); 
 }
 
 /**
@@ -240,7 +302,8 @@ void BSP_LED_On(Led_TypeDef Led)
   */
 void BSP_LED_Off(Led_TypeDef Led)
 {
-  HAL_GPIO_WritePin(GPIO_PORT[Led], GPIO_PIN[Led], GPIO_PIN_RESET); 
+  BspGpioWrite(Led,GPIO_PIN_RESET);
+  //HAL_GPIO_WritePin(GPIO_PORT[Led], GPIO_PIN[Led], GPIO_PIN_RESET); 
 }
 
 /**
@@ -251,7 +314,8 @@ void BSP_LED_Off(Led_TypeDef Led)
   */
 void BSP_LED_Toggle(Led_TypeDef Led)
 {
-  HAL_GPIO_TogglePin(GPIO_PORT[Led], GPIO_PIN[Led]);
+  BspGpioToggle(Led);
+  //HAL_GPIO_TogglePin(GPIO_PORT[Led], GPIO_PIN[Led]);
 }
 
 /**
