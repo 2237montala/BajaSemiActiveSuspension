@@ -35,6 +35,10 @@
 
    typedef domain_t     DOMAIN;
 
+   #define CO_NO_TIME 0
+   #define CO_NO_GFC 0
+   #define CO_NO_SRDO 0
+
 
 /*******************************************************************************
    FILE INFO:
@@ -65,17 +69,15 @@
   #define CO_NO_SDO_CLIENT               1   //Associated objects: 1280-12FF
   #define CO_NO_LSS_SERVER               0   //LSS Slave
   #define CO_NO_LSS_CLIENT               0   //LSS Master
-  #define CO_NO_RPDO                     1   //Associated objects: 14xx, 16xx
+  #define CO_NO_RPDO                     4   //Associated objects: 14xx, 16xx
   #define CO_NO_TPDO                     1   //Associated objects: 18xx, 1Axx
   #define CO_NO_NMT_MASTER               0
 
-#define CO_NO_TIME 0
-#define CO_NO_GFC 0
-#define CO_NO_SRDO 0
+
 /*******************************************************************************
    OBJECT DICTIONARY
 *******************************************************************************/
-   #define CO_OD_NoOfElements             30
+   #define CO_OD_NoOfElements             39
 
 
 /*******************************************************************************
@@ -105,7 +107,7 @@
                UNSIGNED8      transmissionType;
                }              OD_RPDOCommunicationParameter_t;
 /*1600    */ typedef struct {
-               UNSIGNED8      maxSubIndex;
+               UNSIGNED8      numberOfMappedObjects;
                UNSIGNED32     mappedObject1;
                UNSIGNED32     mappedObject2;
                UNSIGNED32     mappedObject3;
@@ -260,6 +262,27 @@
         #define OD_1400_1_RPDOCommunicationParameter_COB_IDUsedByRPDO 1
         #define OD_1400_2_RPDOCommunicationParameter_transmissionType 2
 
+/*1401 */
+        #define OD_1401_RPDOCommunicationParameter                  0x1401
+
+        #define OD_1401_0_RPDOCommunicationParameter_maxSubIndex    0
+        #define OD_1401_1_RPDOCommunicationParameter_COB_IDUsedByRPDO 1
+        #define OD_1401_2_RPDOCommunicationParameter_transmissionType 2
+
+/*1402 */
+        #define OD_1402_RPDOCommunicationParameter                  0x1402
+
+        #define OD_1402_0_RPDOCommunicationParameter_maxSubIndex    0
+        #define OD_1402_1_RPDOCommunicationParameter_COB_IDUsedByRPDO 1
+        #define OD_1402_2_RPDOCommunicationParameter_transmissionType 2
+
+/*1403 */
+        #define OD_1403_RPDOCommunicationParameter                  0x1403
+
+        #define OD_1403_0_RPDOCommunicationParameter_maxSubIndex    0
+        #define OD_1403_1_RPDOCommunicationParameter_COB_IDUsedByRPDO 1
+        #define OD_1403_2_RPDOCommunicationParameter_transmissionType 2
+
 /*1600 */
         #define OD_1600_RPDOMappingParameter                        0x1600
 
@@ -272,6 +295,45 @@
         #define OD_1600_6_RPDOMappingParameter_mappedObject6        6
         #define OD_1600_7_RPDOMappingParameter_mappedObject7        7
         #define OD_1600_8_RPDOMappingParameter_mappedObject8        8
+
+/*1601 */
+        #define OD_1601_RPDOMappingParameter                        0x1601
+
+        #define OD_1601_0_RPDOMappingParameter_maxSubIndex          0
+        #define OD_1601_1_RPDOMappingParameter_mappedObject1        1
+        #define OD_1601_2_RPDOMappingParameter_mappedObject2        2
+        #define OD_1601_3_RPDOMappingParameter_mappedObject3        3
+        #define OD_1601_4_RPDOMappingParameter_mappedObject4        4
+        #define OD_1601_5_RPDOMappingParameter_mappedObject5        5
+        #define OD_1601_6_RPDOMappingParameter_mappedObject6        6
+        #define OD_1601_7_RPDOMappingParameter_mappedObject7        7
+        #define OD_1601_8_RPDOMappingParameter_mappedObject8        8
+
+/*1602 */
+        #define OD_1602_RPDOMappingParameter                        0x1602
+
+        #define OD_1602_0_RPDOMappingParameter_maxSubIndex          0
+        #define OD_1602_1_RPDOMappingParameter_mappedObject1        1
+        #define OD_1602_2_RPDOMappingParameter_mappedObject2        2
+        #define OD_1602_3_RPDOMappingParameter_mappedObject3        3
+        #define OD_1602_4_RPDOMappingParameter_mappedObject4        4
+        #define OD_1602_5_RPDOMappingParameter_mappedObject5        5
+        #define OD_1602_6_RPDOMappingParameter_mappedObject6        6
+        #define OD_1602_7_RPDOMappingParameter_mappedObject7        7
+        #define OD_1602_8_RPDOMappingParameter_mappedObject8        8
+
+/*1603 */
+        #define OD_1603_RPDOMappingParameter                        0x1603
+
+        #define OD_1603_0_RPDOMappingParameter_maxSubIndex          0
+        #define OD_1603_1_RPDOMappingParameter_mappedObject1        1
+        #define OD_1603_2_RPDOMappingParameter_mappedObject2        2
+        #define OD_1603_3_RPDOMappingParameter_mappedObject3        3
+        #define OD_1603_4_RPDOMappingParameter_mappedObject4        4
+        #define OD_1603_5_RPDOMappingParameter_mappedObject5        5
+        #define OD_1603_6_RPDOMappingParameter_mappedObject6        6
+        #define OD_1603_7_RPDOMappingParameter_mappedObject7        7
+        #define OD_1603_8_RPDOMappingParameter_mappedObject8        8
 
 /*1800 */
         #define OD_1800_TPDOCommunicationParameter                  0x1800
@@ -309,6 +371,25 @@
 /*2102 */
         #define OD_2102_CANBitRate                                  0x2102
 
+/*6000 */
+        #define OD_6000_readShockAccel                              0x6000
+
+        #define OD_6000_0_readShockAccel_maxSubIndex                0
+        #define OD_6000_1_readShockAccel_X_Accel                    1
+        #define OD_6000_2_readShockAccel_Y_Accel                    2
+        #define OD_6000_3_readShockAccel_Z_Accel                    3
+
+/*6050 */
+        #define OD_6050_readShockAccelStatus                        0x6050
+
+/*6100 */
+        #define OD_6100_readAccelRPY                                0x6100
+
+        #define OD_6100_0_readAccelRPY_maxSubIndex                  0
+        #define OD_6100_1_readAccelRPY_roll                         1
+        #define OD_6100_2_readAccelRPY_pitch                        2
+        #define OD_6100_3_readAccelRPY_yaw                          3
+
 /*******************************************************************************
    STRUCTURES FOR VARIABLES IN DIFFERENT MEMORY LOCATIONS
 *******************************************************************************/
@@ -334,12 +415,12 @@ struct sCO_OD_ROM{
 /*1019      */ UNSIGNED8       synchronousCounterOverflowValue;
 /*1029      */ UNSIGNED8       errorBehavior[6];
 /*1200      */ OD_SDOServerParameter_t SDOServerParameter[1];
-/*1400      */ OD_RPDOCommunicationParameter_t RPDOCommunicationParameter[1];
+/*1400      */ OD_RPDOCommunicationParameter_t RPDOCommunicationParameter[4];
+/*1600      */ OD_RPDOMappingParameter_t RPDOMappingParameter[4];
 /*1800      */ OD_TPDOCommunicationParameter_t TPDOCommunicationParameter[1];
 /*1a00      */ OD_TPDOMappingParameter_t TPDOMappingParameter[1];
 /*1f80      */ UNSIGNED32      NMTStartup;
 /*2101      */ UNSIGNED8       CANNodeID;
-/*2102      */ UNSIGNED16      CANBitRate;
 
                UNSIGNED32     LastWord;
 };
@@ -354,8 +435,11 @@ struct sCO_OD_RAM{
 /*1010      */ UNSIGNED32      storeParameters[1];
 /*1011      */ UNSIGNED32      restoreDefaultParameters[1];
 /*1280      */ OD_SDOClientParameter_t SDOClientParameter[1];
-/*1600      */ OD_RPDOMappingParameter_t RPDOMappingParameter[1];
 /*2100      */ OCTET_STRING    errorStatusBits[10];
+/*2102      */ UNSIGNED16      CANBitRate;
+/*6000      */ REAL32          readShockAccel[3];
+/*6050      */ UNSIGNED8       readShockAccelStatus;
+/*6100      */ REAL32          readAccelRPY[3];
 
                UNSIGNED32     LastWord;
 };
@@ -466,7 +550,7 @@ extern struct sCO_OD_EEPROM CO_OD_EEPROM;
         #define OD_RPDOCommunicationParameter                       CO_OD_ROM.RPDOCommunicationParameter
 
 /*1600, Data Type: RPDOMappingParameter_t */
-        #define OD_RPDOMappingParameter                             CO_OD_RAM.RPDOMappingParameter
+        #define OD_RPDOMappingParameter                             CO_OD_ROM.RPDOMappingParameter
 
 /*1800, Data Type: TPDOCommunicationParameter_t */
         #define OD_TPDOCommunicationParameter                       CO_OD_ROM.TPDOCommunicationParameter
@@ -485,7 +569,24 @@ extern struct sCO_OD_EEPROM CO_OD_EEPROM;
         #define OD_CANNodeID                                        CO_OD_ROM.CANNodeID
 
 /*2102, Data Type: UNSIGNED16 */
-        #define OD_CANBitRate                                       CO_OD_ROM.CANBitRate
+        #define OD_CANBitRate                                       CO_OD_RAM.CANBitRate
+
+/*6000, Data Type: REAL32, Array[3] */
+        #define OD_readShockAccel                                   CO_OD_RAM.readShockAccel
+        #define ODL_readShockAccel_arrayLength                      3
+        #define ODA_readShockAccel_X_Accel                          0
+        #define ODA_readShockAccel_Y_Accel                          1
+        #define ODA_readShockAccel_Z_Accel                          2
+
+/*6050, Data Type: UNSIGNED8 */
+        #define OD_readShockAccelStatus                             CO_OD_RAM.readShockAccelStatus
+
+/*6100, Data Type: REAL32, Array[3] */
+        #define OD_readAccelRPY                                     CO_OD_RAM.readAccelRPY
+        #define ODL_readAccelRPY_arrayLength                        3
+        #define ODA_readAccelRPY_roll                               0
+        #define ODA_readAccelRPY_pitch                              1
+        #define ODA_readAccelRPY_yaw                                2
 
 #endif
 // clang-format on

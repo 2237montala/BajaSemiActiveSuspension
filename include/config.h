@@ -34,6 +34,12 @@
 
 
 #define NUM_SHOCKS 1
+
+// CANOpen defines ----------------------------------------------------------------------
+#define CAN_BAUD_RATE 500U
+// Main controller ID
+#define MAIN_CONTROLLER_ID 0x05
+
 // Shock controller CAN ids
 // These are set by the dip switches on the controller itself and must be 
 // listed here

@@ -23,33 +23,29 @@ void ShockControllerNMTChange(uint8_t nodeId,uint8_t idx, CO_NMT_internalState_t
 void ShockControllerHBReceived(uint8_t nodeId, uint8_t idx, void *object);
 void ShockControllerHBStopped(uint8_t nodeId, uint8_t idx, void *object);
 
+// CANOpen variable/settings -------------------------------------------------------------
+/* Global variables and objects */
+volatile uint16_t   CO_timer1ms = 0U;   /* variable increments each millisecond */
+uint8_t LED_red, LED_green;
+volatile uint32_t tempTimer = 0;
+
+// Timer for running CANOpen background tasks
+TIM_HandleTypeDef msTimer = {.Instance = TIM6};
+#define TMR_TASK_INTERVAL   (1000)          /* Interval of tmrTask thread in microseconds */
+#define INCREMENT_1MS(var)  (var++)         /* Increment 1ms variable in tmrTask */
+
+// LED values and pins
+#define GREEN_LED_PIN D8
+#define RED_LED_PIN D9
+//-----------------------------------------------------------------------------------------
 // Handle for CAN object linked with CO and Hal
 CAN_HandleTypeDef     CanHandle;
 
 /* UART handler declaration */
 UART_HandleTypeDef debugUartHandle;
 
-TIM_HandleTypeDef msTimer = {.Instance = TIM6};
-
-// LED values and pins
-#define GREEN_LED_PIN D8
-#define RED_LED_PIN D9
-
-
-/* PID systems for the four shock controllers */
-
-
-#define TMR_TASK_INTERVAL   (1000)          /* Interval of tmrTask thread in microseconds */
-#define INCREMENT_1MS(var)  (var++)         /* Increment 1ms variable in tmrTask */
-
 #define log_printf(macropar_message, ...) \
         printf(macropar_message, ##__VA_ARGS__)
-
-
-/* Global variables and objects */
-volatile uint16_t   CO_timer1ms = 0U;   /* variable increments each millisecond */
-uint8_t LED_red, LED_green;
-volatile uint32_t tempTimer = 0;
 
 int setup() {
   // Sets up the systick and other mcu functions
@@ -64,218 +60,191 @@ int setup() {
   BSP_LED_Init(LED2);
   BspGpioInitOutput(GREEN_LED_PIN);
   BspGpioInitOutput(RED_LED_PIN);
-  //CAN_Init();
 
   return 0;
 }
 
 int main (void){
-    CO_ReturnError_t err;
-    CO_NMT_reset_cmd_t reset = CO_RESET_NOT;
-    uint32_t heapMemoryUsed;
-    void *CANmoduleAddress = &CanHandle; /* CAN module address */
-    uint8_t activeNodeId = 0x5; /* Copied from CO_pendingNodeId in the communication reset section */
-    uint16_t pendingBitRate = 500;  /* read from dip switches or nonvolatile memory, configurable by LSS slave */
+  CO_ReturnError_t err;
+  CO_NMT_reset_cmd_t reset = CO_RESET_NOT;
+  uint32_t heapMemoryUsed;
+  void *CANmoduleAddress = &CanHandle; /* CAN module address */
+  uint8_t activeNodeId = MAIN_CONTROLLER_ID;
+  uint16_t pendingBitRate = CAN_BAUD_RATE; 
 
-    /* Configure microcontroller. */
-    setup();
+  /* Configure microcontroller. */
+  setup();
 
-    /* Allocate memory but these are statically allocated so no malloc */
-    err = CO_new(&heapMemoryUsed);
-    if (err != CO_ERROR_NO) {
-        log_printf("Error: Can't allocate memory\r\n");
-        return 0;
-    }
-    else {
-        log_printf("Allocated %d bytes for CANopen objects\r\n", heapMemoryUsed);
-    }
+  /* Allocate memory but these are statically allocated so no malloc */
+  err = CO_new(&heapMemoryUsed);
+  if (err != CO_ERROR_NO) {
+      log_printf("Error: Can't allocate memory\r\n");
+      return 0;
+  }
+  else {
+      log_printf("Allocated %d bytes for CANopen objects\r\n", heapMemoryUsed);
+  }
 
-    /* initialize EEPROM */
-
-
-    /* increase variable each startup. Variable is stored in EEPROM. */
-    //OD_powerOnCounter++;
-
-    //log_printf("CANopenNode - Reset application, count = %d\n", OD_powerOnCounter);
-
-
-    while(reset != CO_RESET_APP){
+  while(reset != CO_RESET_APP){
 /* CANopen communication reset - initialize CANopen objects *******************/
-        uint16_t timer1msPrevious;
+      uint16_t timer1msPrevious;
 
-        // Add one shock controller to the list of monitored notes
-        uint32_t temp = (SHOCK_CONTROLLER_ONE_ID) << 16U;
-        temp |= 1100U;
-        OD_consumerHeartbeatTime[0] = temp;
+      // Add one shock controller to the list of monitored notes
+      uint32_t temp = (SHOCK_CONTROLLER_ONE_ID) << 16U;
+      temp |= 1100U;
+      OD_consumerHeartbeatTime[0] = temp;
 
-        log_printf("CANopenNode - Reset communication...\r\n");
+      log_printf("CANopenNode - Reset communication...\r\n");
 
-        /* disable CAN and CAN interrupts */
+      /* disable CAN and CAN interrupts */
 
-        /* initialize CANopen */
-        err = CO_CANinit(CANmoduleAddress, pendingBitRate);
-        if (err != CO_ERROR_NO) {
-            log_printf("Error: CAN initialization failed: %d\r\n", err);
-            return 0;
-        }
-        // err = CO_LSSinit(&pendingNodeId, &pendingBitRate);
-        // if(err != CO_ERROR_NO) {
-        //     log_printf("Error: LSS slave initialization failed: %d\n", err);
-        //     return 0;
-        // }
-        err = CO_CANopenInit(activeNodeId);
-        if(err != CO_ERROR_NO && err != CO_ERROR_NODE_ID_UNCONFIGURED_LSS) {
-            log_printf("Error: CANopen initialization failed: %d\r\n", err);
-            return 0;
-        }
+      /* initialize CANopen */
+      err = CO_CANinit(CANmoduleAddress, pendingBitRate);
+      if (err != CO_ERROR_NO) {
+          log_printf("Error: CAN initialization failed: %d\r\n", err);
+          return 0;
+      }
+      // err = CO_LSSinit(&pendingNodeId, &pendingBitRate);
+      // if(err != CO_ERROR_NO) {
+      //     log_printf("Error: LSS slave initialization failed: %d\n", err);
+      //     return 0;
+      // }
+      err = CO_CANopenInit(activeNodeId);
+      if(err != CO_ERROR_NO && err != CO_ERROR_NODE_ID_UNCONFIGURED_LSS) {
+          log_printf("Error: CANopen initialization failed: %d\r\n", err);
+          return 0;
+      }
 
-        /* Configure Timer interrupt function for execution every 1 millisecond */
+      /* Configure Timer interrupt function for execution every 1 millisecond */
 
-        HAL_TIM_Base_DeInit(&msTimer);
-        HAL_TIM_Base_Stop_IT(&msTimer);
+      HAL_TIM_Base_DeInit(&msTimer);
+      HAL_TIM_Base_Stop_IT(&msTimer);
 
-        // Using timer 6
-        // Timer 4 input clock is APB1
-        // As of now APB1 is 45Mhz
-        // The Timer 4 clock input is multiplied by 2 so 90 Mhz.
-
-
-        __TIM6_CLK_ENABLE();
-
-        // Input = 90 Mhz
-        // Interal divider = 1
-        // Prescaler = 90
-        // Clock rate = (Input)/(Interal divider * prescaler)
-        //            = (90 MHz)/(90) = 1 Mhz
-
-        msTimer.Init.Prescaler = 90-1;
-        msTimer.Init.CounterMode = TIM_COUNTERMODE_UP;
-        msTimer.Init.Period = 1000-1;
-        msTimer.Init.AutoReloadPreload = 0;
-        msTimer.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-        msTimer.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
-
-        /* Configure CAN transmit and receive interrupt */
-
-        // Initalize timer device
-        HAL_TIM_Base_Init(&msTimer);
-
-        
-
-        // Enable interrupts for timer
-        HAL_TIM_Base_Start_IT(&msTimer);
-
-        // uint32_t startTimer = tempTimer;
-        // HAL_Delay(1000);
-        // uint32_t endTimer = tempTimer;
-        // printf("Timer diff: %lu\r\n",endTimer - startTimer);
-
-        // /* Configure CANopen callbacks, etc */
-        // if(!CO->nodeIdUnconfigured) {
-
-        // }
-
-        // Set up monitor node id's
-        // 
-        
+      // Using timer 6
+      // Timer 4 input clock is APB1
+      // As of now APB1 is 45Mhz
+      // The Timer 4 clock input is multiplied by 2 so 90 Mhz.
 
 
-        //CO_HBconsumer_initEntry(CO->HBcons,,SHOCK_CONTROLLER_ONE_ID,)
+      __TIM6_CLK_ENABLE();
 
-        CO_HBconsumer_initCallbackRemoteReset(CO->HBcons,0,
-                                              NULL,ShockControllerBooted);
+      // Input = 90 Mhz
+      // Interal divider = 1
+      // Prescaler = 90
+      // Clock rate = (Input)/(Interal divider * prescaler)
+      //            = (90 MHz)/(90) = 1 Mhz
 
-        CO_HBconsumer_initCallbackNmtChanged(CO->HBcons,0,
-                                             NULL,ShockControllerNMTChange);
+      msTimer.Init.Prescaler = 90-1;
+      msTimer.Init.CounterMode = TIM_COUNTERMODE_UP;
+      msTimer.Init.Period = 1000-1;
+      msTimer.Init.AutoReloadPreload = 0;
+      msTimer.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+      msTimer.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
 
-        CO_HBconsumer_initCallbackHeartbeatStarted(CO->HBcons, 0,
-                                                  NULL,ShockControllerHBReceived);
+      /* Configure CAN transmit and receive interrupt */
 
-        CO_HBconsumer_initCallbackTimeout(CO->HBcons,0,NULL,ShockControllerHBStopped);
+      // Initalize timer device
+      HAL_TIM_Base_Init(&msTimer);
+
+      
+
+      // Enable interrupts for timer
+      HAL_TIM_Base_Start_IT(&msTimer);
+
+      // Set up callbacks for certain functions
+      CO_HBconsumer_initCallbackRemoteReset(CO->HBcons,0,
+                                            NULL,ShockControllerBooted);
+
+      CO_HBconsumer_initCallbackNmtChanged(CO->HBcons,0,
+                                            NULL,ShockControllerNMTChange);
+
+      CO_HBconsumer_initCallbackHeartbeatStarted(CO->HBcons, 0,
+                                                NULL,ShockControllerHBReceived);
+
+      CO_HBconsumer_initCallbackTimeout(CO->HBcons,0,NULL,ShockControllerHBStopped);
+
+      /* start CAN */
+      CO_CANsetNormalMode(CO->CANmodule[0]);
+
+      reset = CO_RESET_NOT;
+      timer1msPrevious = CO_timer1ms;
+
+      log_printf("CANopenNode - Running...\r\n");
+      fflush(stdout);
+
+      // Run startup sequence
+      bool startUpComplete = false;
+      uint16_t timer1msCopy, timer1msDiff;
+      uint32_t nmtCommandDelay = 5000;
+      uint32_t lastNMTCommandTime = HAL_GetTick();
+      while(reset == CO_RESET_NOT && !startUpComplete){
+          
+
+          timer1msCopy = CO_timer1ms;
+          timer1msDiff = timer1msCopy - timer1msPrevious;
+          timer1msPrevious = timer1msCopy;
+
+          /* CANopen process */
+          reset = CO_process(CO, (uint32_t)timer1msDiff*1000, NULL);
+
+          // Handle LED Updates
+          LED_red = CO_LED_RED(CO->LEDs, CO_LED_CANopen);
+          LED_green = CO_LED_GREEN(CO->LEDs, CO_LED_CANopen);
+
+          BspGpioWrite(GREEN_LED_PIN,LED_green);
+          BspGpioWrite(RED_LED_PIN,LED_red);
+
+          /* Nonblocking application code may go here. */
+          if(CO->HBcons->allMonitoredOperational) {
+            //startUpComplete = true;
+            //BSP_LED_On(LED2);
+          }
+
+          if(HAL_GetTick() - lastNMTCommandTime > nmtCommandDelay) {
+            BSP_LED_Toggle(LED2);
+            //BspGpioToggle(GREEN_LED_PIN);
+            //BspGpioToggle(RED_LED_PIN);
+            lastNMTCommandTime = HAL_GetTick();
+          }
+          
+
+          /* Process EEPROM */
+
+          /* optional sleep for short time */
+      }
 
 
-        /* start CAN */
-        CO_CANsetNormalMode(CO->CANmodule[0]);
+      printf("All nodes are ready\r\n");
 
-        reset = CO_RESET_NOT;
-        timer1msPrevious = CO_timer1ms;
-
-        log_printf("CANopenNode - Running...\r\n");
-        fflush(stdout);
-
-        // Run startup sequence
-        bool startUpComplete = false;
-        uint16_t timer1msCopy, timer1msDiff;
-        uint32_t nmtCommandDelay = 5000;
-        uint32_t lastNMTCommandTime = HAL_GetTick();
-        while(reset == CO_RESET_NOT && !startUpComplete){
-            
-
-            timer1msCopy = CO_timer1ms;
-            timer1msDiff = timer1msCopy - timer1msPrevious;
-            timer1msPrevious = timer1msCopy;
-
-            /* CANopen process */
-            reset = CO_process(CO, (uint32_t)timer1msDiff*1000, NULL);
-
-            // Handle LED Updates
-            LED_red = CO_LED_RED(CO->LEDs, CO_LED_CANopen);
-            LED_green = CO_LED_GREEN(CO->LEDs, CO_LED_CANopen);
-
-            BspGpioWrite(GREEN_LED_PIN,LED_green);
-            BspGpioWrite(RED_LED_PIN,LED_red);
-
-            /* Nonblocking application code may go here. */
-            if(CO->HBcons->allMonitoredOperational) {
-              //startUpComplete = true;
-              //BSP_LED_On(LED2);
-            }
-
-            if(HAL_GetTick() - lastNMTCommandTime > nmtCommandDelay) {
-              BSP_LED_Toggle(LED2);
-              //BspGpioToggle(GREEN_LED_PIN);
-              //BspGpioToggle(RED_LED_PIN);
-              lastNMTCommandTime = HAL_GetTick();
-            }
-            
-
-            /* Process EEPROM */
-
-            /* optional sleep for short time */
-        }
-
-
-        printf("All nodes are ready\r\n");
-
-        while(reset == CO_RESET_NOT){
+      while(reset == CO_RESET_NOT){
 /* loop for normal program execution ******************************************/
-            timer1msCopy = CO_timer1ms;
-            timer1msDiff = timer1msCopy - timer1msPrevious;
-            timer1msPrevious = timer1msCopy;
+          timer1msCopy = CO_timer1ms;
+          timer1msDiff = timer1msCopy - timer1msPrevious;
+          timer1msPrevious = timer1msCopy;
 
-            /* CANopen process */
-            reset = CO_process(CO, (uint32_t)timer1msDiff*1000, NULL);
+          /* CANopen process */
+          reset = CO_process(CO, (uint32_t)timer1msDiff*1000, NULL);
 
-            /* Nonblocking application code may go here. */
+          /* Nonblocking application code may go here. */
 
-            /* Process EEPROM */
+          /* Process EEPROM */
 
-            /* optional sleep for short time */
-        }
-    }
+          /* optional sleep for short time */
+      }
+  }
 
 
 /* program exit ***************************************************************/
-    /* stop threads */
+  /* stop threads */
 
 
-    /* delete objects from memory */
-    CO_delete((void*) 0/* CAN module address */);
+  /* delete objects from memory */
+  CO_delete((void*) 0/* CAN module address */);
 
-    log_printf("CANopenNode finished\r\n");
+  log_printf("CANopenNode finished\r\n");
 
-    /* reset */
-    return 0;
+  /* reset */
+  return 0;
 }
 
 

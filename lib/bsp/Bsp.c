@@ -273,13 +273,7 @@ void BSP_LED_Init(Led_TypeDef Led)
   */
 void BSP_LED_DeInit(Led_TypeDef Led)
 {
-  GPIO_InitTypeDef  gpio_init_structure;
-
-  /* Turn off LED */
-  HAL_GPIO_WritePin(GPIO_PORT[Led], GPIO_PIN[Led], GPIO_PIN_RESET);
-  /* DeInit the GPIO_LED pin */
-  gpio_init_structure.Pin = GPIO_PIN[Led];
-  HAL_GPIO_DeInit(GPIO_PORT[Led], gpio_init_structure.Pin);
+  BspGpioDeinit(Led);
 }
 
 /**
