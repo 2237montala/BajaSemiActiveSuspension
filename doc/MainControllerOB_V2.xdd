@@ -13,7 +13,7 @@
         <ProfileTechnology>CANopen</ProfileTechnology>
       </ISO15745Reference>
     </ProfileHeader>
-    <ProfileBody xsi:type="ProfileBody_Device_CANopen" formatName="CANopen" formatVersion="1.0" fileName="" fileCreator="Anthony Montalbano" fileCreationDate="2021-01-25" fileCreationTime="23:01:25.0000000-06:00" fileModificationDate="2021-01-28" fileModificationTime="23:01:25.0000000-06:00" fileModifiedBy="" fileVersion="1" supportedLanguages="en">
+    <ProfileBody xsi:type="ProfileBody_Device_CANopen" formatName="CANopen" formatVersion="1.0" fileName="" fileCreator="Anthony Montalbano" fileCreationDate="2021-01-25" fileCreationTime="23:01:25.0000000-06:00" fileModificationDate="2021-02-22" fileModificationTime="10:29:30.5031668-06:00" fileModifiedBy="" fileVersion="0" supportedLanguages="en">
       <DeviceIdentity>
         <vendorName readOnly="true" />
         <vendorID>0</vendorID>
@@ -22,7 +22,7 @@
         <productName readOnly="true">Main Controller</productName>
         <productID>0</productID>
         <productText readOnly="true">
-          <description lang="en">FileDescription=|EdsVersion=|FileRevision=1|RevisionNum=1</description>
+          <description lang="en">FileDescription=|EdsVersion=|FileRevision=0|RevisionNum=3</description>
         </productText>
         <version versionType="SW" />
         <version versionType="FW" />
@@ -165,7 +165,7 @@ bit    31: set to 0</description>
             <denotation>
               <label lang="en" />
             </denotation>
-            <defaultValue value="0x00000080" />
+            <defaultValue value="0x40000080" />
           </parameter>
           <parameter uniqueID="UID_PARAM_1006" access="readWrite">
             <label lang="en">Communication cycle period</label>
@@ -173,7 +173,7 @@ bit    31: set to 0</description>
             <denotation>
               <label lang="en" />
             </denotation>
-            <defaultValue value="0" />
+            <defaultValue value="0x1388" />
           </parameter>
           <parameter uniqueID="UID_PARAM_1007" access="readWrite">
             <label lang="en">Synchronous window length</label>
@@ -1318,7 +1318,7 @@ bit 7-31: reserved, set to 0</description>
             <denotation>
               <label lang="en" />
             </denotation>
-            <defaultValue value="0x00000008" />
+            <defaultValue value="0x00000005" />
           </parameter>
           <parameter uniqueID="UID_PARAM_2100" access="read">
             <label lang="en">Error status bits</label>
@@ -1520,7 +1520,7 @@ Bit 1 - 7: Not Defined</description>
         <ProfileTechnology>CANopen</ProfileTechnology>
       </ISO15745Reference>
     </ProfileHeader>
-    <ProfileBody xsi:type="ProfileBody_CommunicationNetwork_CANopen" formatName="CANopen" formatVersion="1.0" fileName="" fileCreator="Anthony Montalbano" fileCreationDate="2021-01-25" fileCreationTime="23:01:25.0000000-06:00" fileModificationDate="2021-01-28" fileVersion="1" supportedLanguages="en">
+    <ProfileBody xsi:type="ProfileBody_CommunicationNetwork_CANopen" formatName="CANopen" formatVersion="1.0" fileName="" fileCreator="Anthony Montalbano" fileCreationDate="2021-01-25" fileCreationTime="23:01:25.0000000-06:00" fileModificationDate="2021-02-22" fileVersion="0" supportedLanguages="en">
       <ApplicationLayers>
         <CANopenObjectList>
           <CANopenObject index="1000" name="Device type" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1000" />
@@ -1538,7 +1538,7 @@ Bit 1 - 7: Not Defined</description>
             <CANopenSubObject subIndex="0008" name="Standard error field" objectType="7" dataType="0000" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_100308" />
           </CANopenObject>
           <CANopenObject index="1005" name="COB-ID SYNC message" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1005" />
-          <CANopenObject index="1006" name="Communication cycle period" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1006" />
+          <CANopenObject index="1006" name="Communication cycle period" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1006" />
           <CANopenObject index="1007" name="Synchronous window length" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1007" />
           <CANopenObject index="1008" name="Manufacturer device name" objectType="7" dataType="0009" lowLimit="" highLimit="" accessType="const" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1008" />
           <CANopenObject index="1009" name="Manufacturer hardware version" objectType="7" dataType="0009" lowLimit="" highLimit="" accessType="const" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1009" />
@@ -1590,69 +1590,69 @@ Bit 1 - 7: Not Defined</description>
             <CANopenSubObject subIndex="0002" name="COB-ID server to client" objectType="7" dataType="0007" accessType="rw" actualValue="" PDOmapping="optional" uniqueIDRef="UID_PARAM_128002" />
             <CANopenSubObject subIndex="0003" name="Node-ID of the SDO server" objectType="7" dataType="0005" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_128003" />
           </CANopenObject>
-          <CANopenObject index="1400" name="RPDO communication parameter" objectType="9" dataType="0000" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1400" subNumber="3">
-            <CANopenSubObject subIndex="0000" name="max sub-index" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_140000" />
-            <CANopenSubObject subIndex="0001" name="COB-ID used by RPDO" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_140001" />
-            <CANopenSubObject subIndex="0002" name="transmission type" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_140002" />
+          <CANopenObject index="1400" name="RPDO communication parameter" objectType="9" dataType="0000" lowLimit="" highLimit="" accessType="ro" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1400" subNumber="3">
+            <CANopenSubObject subIndex="0000" name="max sub-index" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_140000" />
+            <CANopenSubObject subIndex="0001" name="COB-ID used by RPDO" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_140001" />
+            <CANopenSubObject subIndex="0002" name="transmission type" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_140002" />
           </CANopenObject>
-          <CANopenObject index="1401" name="RPDO communication parameter" objectType="9" dataType="0000" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1401" subNumber="3">
-            <CANopenSubObject subIndex="0000" name="max sub-index" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_140100" />
-            <CANopenSubObject subIndex="0001" name="COB-ID used by RPDO" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_140101" />
-            <CANopenSubObject subIndex="0002" name="transmission type" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_140102" />
+          <CANopenObject index="1401" name="RPDO communication parameter" objectType="9" dataType="0000" lowLimit="" highLimit="" accessType="ro" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1401" subNumber="3">
+            <CANopenSubObject subIndex="0000" name="max sub-index" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_140100" />
+            <CANopenSubObject subIndex="0001" name="COB-ID used by RPDO" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_140101" />
+            <CANopenSubObject subIndex="0002" name="transmission type" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_140102" />
           </CANopenObject>
-          <CANopenObject index="1402" name="RPDO communication parameter" objectType="9" dataType="0000" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1402" subNumber="3">
-            <CANopenSubObject subIndex="0000" name="max sub-index" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_140200" />
-            <CANopenSubObject subIndex="0001" name="COB-ID used by RPDO" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_140201" />
-            <CANopenSubObject subIndex="0002" name="transmission type" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_140202" />
+          <CANopenObject index="1402" name="RPDO communication parameter" objectType="9" dataType="0000" lowLimit="" highLimit="" accessType="ro" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1402" subNumber="3">
+            <CANopenSubObject subIndex="0000" name="max sub-index" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_140200" />
+            <CANopenSubObject subIndex="0001" name="COB-ID used by RPDO" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_140201" />
+            <CANopenSubObject subIndex="0002" name="transmission type" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_140202" />
           </CANopenObject>
-          <CANopenObject index="1403" name="RPDO communication parameter" objectType="9" dataType="0000" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1403" subNumber="3">
-            <CANopenSubObject subIndex="0000" name="max sub-index" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_140300" />
-            <CANopenSubObject subIndex="0001" name="COB-ID used by RPDO" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_140301" />
-            <CANopenSubObject subIndex="0002" name="transmission type" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_140302" />
+          <CANopenObject index="1403" name="RPDO communication parameter" objectType="9" dataType="0000" lowLimit="" highLimit="" accessType="ro" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1403" subNumber="3">
+            <CANopenSubObject subIndex="0000" name="max sub-index" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_140300" />
+            <CANopenSubObject subIndex="0001" name="COB-ID used by RPDO" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_140301" />
+            <CANopenSubObject subIndex="0002" name="transmission type" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_140302" />
           </CANopenObject>
-          <CANopenObject index="1600" name="RPDO mapping parameter" objectType="9" dataType="0000" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1600" subNumber="9">
-            <CANopenSubObject subIndex="0000" name="Number of mapped objects" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160000" />
-            <CANopenSubObject subIndex="0001" name="mapped object 1" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160001" />
-            <CANopenSubObject subIndex="0002" name="mapped object 2" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160002" />
-            <CANopenSubObject subIndex="0003" name="mapped object 3" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160003" />
-            <CANopenSubObject subIndex="0004" name="mapped object 4" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160004" />
-            <CANopenSubObject subIndex="0005" name="mapped object 5" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160005" />
-            <CANopenSubObject subIndex="0006" name="mapped object 6" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160006" />
-            <CANopenSubObject subIndex="0007" name="mapped object 7" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160007" />
-            <CANopenSubObject subIndex="0008" name="mapped object 8" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160008" />
+          <CANopenObject index="1600" name="RPDO mapping parameter" objectType="9" dataType="0000" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1600" subNumber="9">
+            <CANopenSubObject subIndex="0000" name="Number of mapped objects" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160000" />
+            <CANopenSubObject subIndex="0001" name="mapped object 1" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160001" />
+            <CANopenSubObject subIndex="0002" name="mapped object 2" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160002" />
+            <CANopenSubObject subIndex="0003" name="mapped object 3" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160003" />
+            <CANopenSubObject subIndex="0004" name="mapped object 4" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160004" />
+            <CANopenSubObject subIndex="0005" name="mapped object 5" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160005" />
+            <CANopenSubObject subIndex="0006" name="mapped object 6" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160006" />
+            <CANopenSubObject subIndex="0007" name="mapped object 7" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160007" />
+            <CANopenSubObject subIndex="0008" name="mapped object 8" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160008" />
           </CANopenObject>
-          <CANopenObject index="1601" name="RPDO mapping parameter" objectType="9" dataType="0000" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1601" subNumber="9">
-            <CANopenSubObject subIndex="0000" name="Number of mapped objects" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160100" />
-            <CANopenSubObject subIndex="0001" name="mapped object 1" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160101" />
-            <CANopenSubObject subIndex="0002" name="mapped object 2" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160102" />
-            <CANopenSubObject subIndex="0003" name="mapped object 3" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160103" />
-            <CANopenSubObject subIndex="0004" name="mapped object 4" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160104" />
-            <CANopenSubObject subIndex="0005" name="mapped object 5" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160105" />
-            <CANopenSubObject subIndex="0006" name="mapped object 6" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160106" />
-            <CANopenSubObject subIndex="0007" name="mapped object 7" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160107" />
-            <CANopenSubObject subIndex="0008" name="mapped object 8" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160108" />
+          <CANopenObject index="1601" name="RPDO mapping parameter" objectType="9" dataType="0000" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1601" subNumber="9">
+            <CANopenSubObject subIndex="0000" name="Number of mapped objects" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160100" />
+            <CANopenSubObject subIndex="0001" name="mapped object 1" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160101" />
+            <CANopenSubObject subIndex="0002" name="mapped object 2" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160102" />
+            <CANopenSubObject subIndex="0003" name="mapped object 3" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160103" />
+            <CANopenSubObject subIndex="0004" name="mapped object 4" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160104" />
+            <CANopenSubObject subIndex="0005" name="mapped object 5" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160105" />
+            <CANopenSubObject subIndex="0006" name="mapped object 6" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160106" />
+            <CANopenSubObject subIndex="0007" name="mapped object 7" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160107" />
+            <CANopenSubObject subIndex="0008" name="mapped object 8" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160108" />
           </CANopenObject>
-          <CANopenObject index="1602" name="RPDO mapping parameter" objectType="9" dataType="0000" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1602" subNumber="9">
-            <CANopenSubObject subIndex="0000" name="Number of mapped objects" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160200" />
-            <CANopenSubObject subIndex="0001" name="mapped object 1" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160201" />
-            <CANopenSubObject subIndex="0002" name="mapped object 2" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160202" />
-            <CANopenSubObject subIndex="0003" name="mapped object 3" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160203" />
-            <CANopenSubObject subIndex="0004" name="mapped object 4" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160204" />
-            <CANopenSubObject subIndex="0005" name="mapped object 5" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160205" />
-            <CANopenSubObject subIndex="0006" name="mapped object 6" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160206" />
-            <CANopenSubObject subIndex="0007" name="mapped object 7" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160207" />
-            <CANopenSubObject subIndex="0008" name="mapped object 8" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160208" />
+          <CANopenObject index="1602" name="RPDO mapping parameter" objectType="9" dataType="0000" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1602" subNumber="9">
+            <CANopenSubObject subIndex="0000" name="Number of mapped objects" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160200" />
+            <CANopenSubObject subIndex="0001" name="mapped object 1" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160201" />
+            <CANopenSubObject subIndex="0002" name="mapped object 2" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160202" />
+            <CANopenSubObject subIndex="0003" name="mapped object 3" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160203" />
+            <CANopenSubObject subIndex="0004" name="mapped object 4" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160204" />
+            <CANopenSubObject subIndex="0005" name="mapped object 5" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160205" />
+            <CANopenSubObject subIndex="0006" name="mapped object 6" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160206" />
+            <CANopenSubObject subIndex="0007" name="mapped object 7" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160207" />
+            <CANopenSubObject subIndex="0008" name="mapped object 8" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160208" />
           </CANopenObject>
-          <CANopenObject index="1603" name="RPDO mapping parameter" objectType="9" dataType="0000" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1603" subNumber="9">
-            <CANopenSubObject subIndex="0000" name="Number of mapped objects" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160300" />
-            <CANopenSubObject subIndex="0001" name="mapped object 1" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160301" />
-            <CANopenSubObject subIndex="0002" name="mapped object 2" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160302" />
-            <CANopenSubObject subIndex="0003" name="mapped object 3" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160303" />
-            <CANopenSubObject subIndex="0004" name="mapped object 4" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160304" />
-            <CANopenSubObject subIndex="0005" name="mapped object 5" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160305" />
-            <CANopenSubObject subIndex="0006" name="mapped object 6" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160306" />
-            <CANopenSubObject subIndex="0007" name="mapped object 7" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160307" />
-            <CANopenSubObject subIndex="0008" name="mapped object 8" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="no" uniqueIDRef="UID_PARAM_160308" />
+          <CANopenObject index="1603" name="RPDO mapping parameter" objectType="9" dataType="0000" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1603" subNumber="9">
+            <CANopenSubObject subIndex="0000" name="Number of mapped objects" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160300" />
+            <CANopenSubObject subIndex="0001" name="mapped object 1" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160301" />
+            <CANopenSubObject subIndex="0002" name="mapped object 2" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160302" />
+            <CANopenSubObject subIndex="0003" name="mapped object 3" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160303" />
+            <CANopenSubObject subIndex="0004" name="mapped object 4" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160304" />
+            <CANopenSubObject subIndex="0005" name="mapped object 5" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160305" />
+            <CANopenSubObject subIndex="0006" name="mapped object 6" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160306" />
+            <CANopenSubObject subIndex="0007" name="mapped object 7" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160307" />
+            <CANopenSubObject subIndex="0008" name="mapped object 8" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_160308" />
           </CANopenObject>
           <CANopenObject index="1800" name="TPDO communication parameter" objectType="9" dataType="0020" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1800" subNumber="7">
             <CANopenSubObject subIndex="0000" name="max sub-index" objectType="7" dataType="0005" accessType="ro" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_180000" />
@@ -1674,22 +1674,22 @@ Bit 1 - 7: Not Defined</description>
             <CANopenSubObject subIndex="0007" name="mapped object 7" objectType="7" dataType="0007" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_1a0007" />
             <CANopenSubObject subIndex="0008" name="mapped object 8" objectType="7" dataType="0007" accessType="rw" actualValue="" PDOmapping="no" uniqueIDRef="UID_PARAM_1a0008" />
           </CANopenObject>
-          <CANopenObject index="1F80" name="NMT startup" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1f80" />
+          <CANopenObject index="1F80" name="NMT startup" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1f80" />
           <CANopenObject index="2100" name="Error status bits" objectType="7" dataType="000A" lowLimit="" highLimit="" accessType="ro" actualValue="" edseditor_extenstion_storagelocation="RAM" PDOmapping="optional" uniqueIDRef="UID_PARAM_2100" />
           <CANopenObject index="2101" name="CAN node ID" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_2101" />
-          <CANopenObject index="2102" name="CAN bit rate" objectType="7" dataType="0006" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" edseditor_extenstion_storagelocation="RAM" PDOmapping="no" uniqueIDRef="UID_PARAM_2102" />
-          <CANopenObject index="6000" name="Read Shock Accel" objectType="8" dataType="0008" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" edseditor_extenstion_storagelocation="RAM" PDOmapping="optional" uniqueIDRef="UID_PARAM_6000" subNumber="4">
-            <CANopenSubObject subIndex="0000" name="max sub-index" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_600000" />
-            <CANopenSubObject subIndex="0001" name="X Accel" objectType="7" dataType="0008" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_600001" />
-            <CANopenSubObject subIndex="0002" name="Y Accel" objectType="7" dataType="0008" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_600002" />
-            <CANopenSubObject subIndex="0003" name="Z Accel" objectType="7" dataType="0008" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_600003" />
+          <CANopenObject index="2102" name="CAN bit rate" objectType="7" dataType="0006" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="RAM" PDOmapping="no" uniqueIDRef="UID_PARAM_2102" />
+          <CANopenObject index="6000" name="Read Shock Accel" objectType="8" dataType="0008" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="RAM" PDOmapping="optional" uniqueIDRef="UID_PARAM_6000" subNumber="4">
+            <CANopenSubObject subIndex="0000" name="max sub-index" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="optional" uniqueIDRef="UID_PARAM_600000" />
+            <CANopenSubObject subIndex="0001" name="X Accel" objectType="7" dataType="0008" lowLimit="" highLimit="" accessType="rw" actualValue="" PDOmapping="optional" uniqueIDRef="UID_PARAM_600001" />
+            <CANopenSubObject subIndex="0002" name="Y Accel" objectType="7" dataType="0008" lowLimit="" highLimit="" accessType="rw" actualValue="" PDOmapping="optional" uniqueIDRef="UID_PARAM_600002" />
+            <CANopenSubObject subIndex="0003" name="Z Accel" objectType="7" dataType="0008" lowLimit="" highLimit="" accessType="rw" actualValue="" PDOmapping="optional" uniqueIDRef="UID_PARAM_600003" />
           </CANopenObject>
-          <CANopenObject index="6050" name="Read Shock Accel Status" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" edseditor_extenstion_storagelocation="RAM" PDOmapping="optional" uniqueIDRef="UID_PARAM_6050" />
-          <CANopenObject index="6100" name="Read Accel RPY" objectType="8" dataType="0008" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" edseditor_extenstion_storagelocation="RAM" PDOmapping="optional" uniqueIDRef="UID_PARAM_6100" subNumber="4">
-            <CANopenSubObject subIndex="0000" name="max sub-index" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="ro" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_610000" />
-            <CANopenSubObject subIndex="0001" name="Roll" objectType="7" dataType="0008" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_610001" />
-            <CANopenSubObject subIndex="0002" name="Pitch" objectType="7" dataType="0008" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_610002" />
-            <CANopenSubObject subIndex="0003" name="Yaw" objectType="7" dataType="0008" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" PDOmapping="optional" uniqueIDRef="UID_PARAM_610003" />
+          <CANopenObject index="6050" name="Read Shock Accel Status" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="RAM" PDOmapping="optional" uniqueIDRef="UID_PARAM_6050" />
+          <CANopenObject index="6100" name="Read Accel RPY" objectType="8" dataType="0008" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="RAM" PDOmapping="optional" uniqueIDRef="UID_PARAM_6100" subNumber="4">
+            <CANopenSubObject subIndex="0000" name="max sub-index" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="optional" uniqueIDRef="UID_PARAM_610000" />
+            <CANopenSubObject subIndex="0001" name="Roll" objectType="7" dataType="0008" lowLimit="" highLimit="" accessType="rw" actualValue="" PDOmapping="optional" uniqueIDRef="UID_PARAM_610001" />
+            <CANopenSubObject subIndex="0002" name="Pitch" objectType="7" dataType="0008" lowLimit="" highLimit="" accessType="rw" actualValue="" PDOmapping="optional" uniqueIDRef="UID_PARAM_610002" />
+            <CANopenSubObject subIndex="0003" name="Yaw" objectType="7" dataType="0008" lowLimit="" highLimit="" accessType="rw" actualValue="" PDOmapping="optional" uniqueIDRef="UID_PARAM_610003" />
           </CANopenObject>
         </CANopenObjectList>
         <dummyUsage>
