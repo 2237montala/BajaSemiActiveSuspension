@@ -167,16 +167,19 @@ CO_ReturnError_t CO_CANmodule_init(
 
     /* Configure CAN timing */
     // Hard coded in rn
-    // TODO: Add different baud rates
     CanHandle->Init.TimeSeg1 = CAN_BS1_12TQ;
     CanHandle->Init.TimeSeg2 = CAN_BS2_2TQ;
-    
 
-    if(CANbitRate != 500) {
-        return CO_ERROR_ILLEGAL_BAUDRATE;
-    }
-
-    CanHandle->Init.Prescaler = 6;
+    switch(CANbitRate) {
+        case 500:
+            CanHandle->Init.Prescaler = 6;
+            break;
+        case 1000:
+            CanHandle->Init.Prescaler = 3;
+            break;
+        default:
+            return CO_ERROR_ILLEGAL_BAUDRATE;
+    }  
 
     if(HAL_CAN_Init(CanHandle) != HAL_OK)
     {

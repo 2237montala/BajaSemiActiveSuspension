@@ -37,6 +37,10 @@ TIM_HandleTypeDef msTimer = {.Instance = TIM6};
 // LED values and pins
 #define GREEN_LED_PIN D8
 #define RED_LED_PIN D9
+
+uint32_t nmtRetryCounter = 0;
+bool nmtChanged = false;
+
 //-----------------------------------------------------------------------------------------
 // Handle for CAN object linked with CO and Hal
 CAN_HandleTypeDef     CanHandle;
@@ -91,7 +95,7 @@ int main (void){
 
       // Add one shock controller to the list of monitored notes
       uint32_t temp = (SHOCK_CONTROLLER_ONE_ID) << 16U;
-      temp |= 1100U;
+      temp |= 1200U;
       OD_consumerHeartbeatTime[0] = temp;
 
       log_printf("CANopenNode - Reset communication...\r\n");
@@ -177,6 +181,7 @@ int main (void){
       uint16_t timer1msCopy, timer1msDiff;
       uint32_t nmtCommandDelay = 5000;
       uint32_t lastNMTCommandTime = HAL_GetTick();
+      bool onBoot = true;
       while(reset == CO_RESET_NOT && !startUpComplete){
           
 
@@ -194,18 +199,26 @@ int main (void){
           BspGpioWrite(GREEN_LED_PIN,LED_green);
           BspGpioWrite(RED_LED_PIN,LED_red);
 
+          if(onBoot) {
+            // Run some code in the beginning to reset network
+            printf("Reseting all shock controllers\r\n");
+            CO_NMT_sendCommand(CO->NMT,CO_NMT_RESET_NODE,SHOCK_CONTROLLER_ONE_ID);
+
+            onBoot = false;
+          }
+
           /* Nonblocking application code may go here. */
           if(CO->HBcons->allMonitoredOperational) {
             //startUpComplete = true;
             //BSP_LED_On(LED2);
           }
 
-          if(HAL_GetTick() - lastNMTCommandTime > nmtCommandDelay) {
-            BSP_LED_Toggle(LED2);
-            //BspGpioToggle(GREEN_LED_PIN);
-            //BspGpioToggle(RED_LED_PIN);
+          if(HAL_GetTick() - lastNMTCommandTime >= nmtCommandDelay) {
             lastNMTCommandTime = HAL_GetTick();
+            //CO->TPDO[0]->sendRequest = true;
           }
+
+          //Request sending of TPDOs
           
 
           /* Process EEPROM */
@@ -426,20 +439,37 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
     
 }
 
-void ShockControllerBooted(uint8_t nodeId, uint8_t idx, void *object) {
-  printf("Shock controller node %d booted\r\n",nodeId);
-  CO_NMT_sendCommand(CO->NMT,CO_NMT_ENTER_OPERATIONAL,nodeId);
+void SetRemoteNodeToOperational(uint8_t nodeId) {
+  if(nodeId == SHOCK_CONTROLLER_ONE_ID) {
+    if(nmtRetryCounter++ < 5) {
+      //printf("Putting back into operational state\r\n");
+      CO_NMT_sendCommand(CO->NMT,CO_NMT_ENTER_OPERATIONAL,nodeId);
+    } else if(nmtRetryCounter == 6) {
+      printf("Too many retry attempts\r\n");
+    }
+  }
 }
 
+void ShockControllerBooted(uint8_t nodeId, uint8_t idx, void *object) {
+  printf("%lu: Shock controller node %d booted\r\n",HAL_GetTick(),nodeId);
+  //CO_NMT_sendCommand(CO->NMT,CO_NMT_ENTER_OPERATIONAL,nodeId);
+}
+
+
 void ShockControllerNMTChange(uint8_t nodeId,uint8_t idx, CO_NMT_internalState_t state, void *object) {
-  printf("Shock controller node %d NMT changed to %d\r\n",nodeId,state);
+  printf("%lu: Shock controller node %d NMT changed to %d\r\n",HAL_GetTick(),nodeId,state);
+  if(state != CO_NMT_INITIALIZING) {
+    SetRemoteNodeToOperational(nodeId);
+  }
+  
 }
 
 void ShockControllerHBReceived(uint8_t nodeId, uint8_t idx, void *object) {
-  printf("Shock controller node %d HB started\r\n",nodeId);
+  //printf("Shock controller node %d HB started\r\n",nodeId);
 }
 
 void ShockControllerHBStopped(uint8_t nodeId, uint8_t idx, void *object) {
-  printf("Shock controller node %d HB stopped\r\n",nodeId);
+  //printf("Shock controller node %d HB stopped\r\n",nodeId);
 }
+
 
