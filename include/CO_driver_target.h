@@ -160,9 +160,9 @@ extern "C" {
 
 /* Basic definitions. If big endian, CO_SWAP_xx macros must swap bytes. */
 #define CO_LITTLE_ENDIAN
-#define CO_SWAP_16(x) x
-#define CO_SWAP_32(x) x
-#define CO_SWAP_64(x) x
+#define CO_SWAP_16(x) __builtin_bswap16(x) 
+#define CO_SWAP_32(x) __builtin_bswap32(x)
+#define CO_SWAP_64(x) __buildin_bswap64(x)
 /* NULL is defined in stddef.h */
 /* true and false are defined in stdbool.h */
 /* int8_t to uint64_t are defined in stdint.h */

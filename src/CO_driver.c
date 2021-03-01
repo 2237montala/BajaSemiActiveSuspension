@@ -43,7 +43,9 @@ static CO_CANmodule_t* RxFifo_Callback_CanModule_p = NULL;
 
 // Private function declarations
 static inline void prepareTxHeader(CAN_TxHeaderTypeDef *TxHeader, CO_CANtx_t *buffer);
+
 void CO_CANInterruptRx(CO_CANmodule_t *CANmodule);
+void CO_CANInterruptTx(CO_CANmodule_t *CANmodule);
 
 // Custom functions for STM32 implementation of CANOpen
 static inline void prepareTxHeader(CAN_TxHeaderTypeDef *TxHeader, CO_CANtx_t *buffer) {
@@ -69,6 +71,27 @@ void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 	}
 }
 
+void HAL_CAN_TxMailbox0CompleteCallback(CAN_HandleTypeDef *hcan) {
+    if(RxFifo_Callback_CanModule_p != NULL)
+	{
+		CO_CANInterruptTx(RxFifo_Callback_CanModule_p);
+	}
+}
+
+void HAL_CAN_TxMailbox1CompleteCallback(CAN_HandleTypeDef *hcan) {
+    if(RxFifo_Callback_CanModule_p != NULL)
+	{
+		CO_CANInterruptTx(RxFifo_Callback_CanModule_p);
+	}
+}
+
+void HAL_CAN_TxMailbox2CompleteCallback(CAN_HandleTypeDef *hcan) {
+    if(RxFifo_Callback_CanModule_p != NULL)
+	{
+		CO_CANInterruptTx(RxFifo_Callback_CanModule_p);
+	}
+}
+
 
 /******************************************************************************/
 void CO_CANsetConfigurationMode(void *CANptr){
@@ -81,8 +104,11 @@ void CO_CANsetNormalMode(CO_CANmodule_t *CANmodule){
     /* Put CAN module in normal mode */
     if(((CAN_HandleTypeDef *)(CANmodule->CANptr))->Instance == CAN1) {
         if(HAL_CAN_Start(CANmodule->CANptr) == HAL_OK) {
+
+            // Enable interrupts for reciving, empty tx queue, any error, and bus off status
             if(HAL_CAN_ActivateNotification(CanHandle,
-                CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_RX_FIFO1_MSG_PENDING | CAN_IT_TX_MAILBOX_EMPTY)
+                CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_RX_FIFO1_MSG_PENDING | CAN_IT_TX_MAILBOX_EMPTY |
+                CAN_IT_ERROR | CAN_IT_BUSOFF | CAN_IT_LAST_ERROR_CODE)
                 != HAL_OK) {
                 /* Notification Error */
                 CANmodule->errinfo = CO_ERROR_TIMEOUT;
@@ -186,6 +212,9 @@ CO_ReturnError_t CO_CANmodule_init(
         /* Initialization Error */
         return CO_ERROR_TIMEOUT;
     }
+
+    // Reset the bxCan module incase we didn't do a full power off restart
+    HAL_CAN_ResetError(CanHandle);
 
     /* Configure CAN module hardware filters */
     if(CANmodule->useCANrxFilters){
@@ -510,8 +539,10 @@ void CO_CANInterruptTx(CO_CANmodule_t *CANmodule){
     CANmodule->firstCANtxMessage = false;
     /* clear flag from previous message */
     CANmodule->bufferInhibitFlag = false;
+    
     /* Are there any new messages waiting to be send */
-    if(CANmodule->CANtxCount > 0U){
+    // Is there room for another message?
+    if(HAL_CAN_GetTxMailboxesFreeLevel(CANmodule->CANptr) > 0 && CANmodule->CANtxCount > 0U){
         uint16_t i;             /* index of transmitting message */
 
         /* first buffer */

@@ -36,7 +36,7 @@
 #define NUM_SHOCKS 1
 
 // CANOpen defines ----------------------------------------------------------------------
-#define CAN_BAUD_RATE 500U
+#define CAN_BAUD_RATE 1000U
 // Main controller ID
 #define MAIN_CONTROLLER_ID 0x05
 

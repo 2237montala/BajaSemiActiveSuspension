@@ -37,6 +37,7 @@ TIM_HandleTypeDef msTimer = {.Instance = TIM6};
 // LED values and pins
 #define GREEN_LED_PIN D8
 #define RED_LED_PIN D9
+#define DEBUG_GPIO_PIN D4
 
 uint32_t nmtRetryCounter = 0;
 bool nmtChanged = false;
@@ -64,6 +65,7 @@ int setup() {
   BSP_LED_Init(LED2);
   BspGpioInitOutput(GREEN_LED_PIN);
   BspGpioInitOutput(RED_LED_PIN);
+  BspGpioInitOutput(DEBUG_GPIO_PIN);
 
   return 0;
 }
@@ -138,7 +140,7 @@ int main (void){
       // Clock rate = (Input)/(Interal divider * prescaler)
       //            = (90 MHz)/(90) = 1 Mhz
 
-      msTimer.Init.Prescaler = 90-1;
+      msTimer.Init.Prescaler = 91-1;
       msTimer.Init.CounterMode = TIM_COUNTERMODE_UP;
       msTimer.Init.Period = 1000-1;
       msTimer.Init.AutoReloadPreload = 0;
@@ -264,6 +266,7 @@ int main (void){
 /* timer thread executes in constant intervals ********************************/
 void tmrTask_thread(void){
   /* sleep for interval */
+  BspGpioToggle(DEBUG_GPIO_PIN);
   INCREMENT_1MS(CO_timer1ms);
   if(CO->CANmodule[0]->CANnormal) {
       bool_t syncWas;
@@ -285,14 +288,6 @@ void tmrTask_thread(void){
       }
   }
 }
-
-
-/* CAN interrupt function executes on received CAN message ********************/
-void /* interrupt */ CO_CAN1InterruptHandler(void){
-
-    /* clear interrupt flag */
-}
-
 
 /**
   * @brief  System Clock Configuration
@@ -472,4 +467,7 @@ void ShockControllerHBStopped(uint8_t nodeId, uint8_t idx, void *object) {
   //printf("Shock controller node %d HB stopped\r\n",nodeId);
 }
 
+void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan) {
+    printf("CAN error: 0x%lx\r\n", hcan->ErrorCode);
+}
 
