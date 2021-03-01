@@ -1,0 +1,18 @@
+1A0 = 416
+180 = 386
+
+CANOpen ident
+1A0 = 680
+180 = 600
+
+Raw message 
+0A0 00 81 10 18 40 1f 00 00
+
+Corrected message
+0a0	81 00 10 18 0 0 40 1f
+
+Error Code(0,1) 8100 so comms error
+Error Register(2) 10
+Error Bit(3) 18 sync time out
+Info Code(4,5) 00
+Manufact Code (6+) 40 1f
