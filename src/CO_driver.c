@@ -108,7 +108,7 @@ void CO_CANsetNormalMode(CO_CANmodule_t *CANmodule){
             // Enable interrupts for reciving, empty tx queue, any error, and bus off status
             if(HAL_CAN_ActivateNotification(CanHandle,
                 CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_RX_FIFO1_MSG_PENDING | CAN_IT_TX_MAILBOX_EMPTY |
-                CAN_IT_ERROR | CAN_IT_BUSOFF | CAN_IT_LAST_ERROR_CODE)
+                CAN_IT_ERROR | CAN_IT_BUSOFF | CAN_IT_LAST_ERROR_CODE | CAN_IT_ERROR_WARNING)
                 != HAL_OK) {
                 /* Notification Error */
                 CANmodule->errinfo = CO_ERROR_TIMEOUT;
@@ -256,7 +256,8 @@ void CO_CANmodule_disable(CO_CANmodule_t *CANmodule){
 	/* handled by HAL*/
     if(((CAN_HandleTypeDef *)(CANmodule->CANptr))->Instance == CAN1) {
         HAL_CAN_DeactivateNotification(CanHandle,
-			CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_RX_FIFO1_MSG_PENDING | CAN_IT_TX_MAILBOX_EMPTY);
+			CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_RX_FIFO1_MSG_PENDING | CAN_IT_TX_MAILBOX_EMPTY |
+            CAN_IT_ERROR | CAN_IT_BUSOFF | CAN_IT_LAST_ERROR_CODE | CAN_IT_ERROR_WARNING);
 	    HAL_CAN_Stop(CanHandle);
     }
 	

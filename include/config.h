@@ -33,10 +33,10 @@
 #define NUM_SHOCK_PROFILES 1
 
 
-#define NUM_SHOCKS 1
+#define NUM_SHOCKS 2
 
 // CANOpen defines ----------------------------------------------------------------------
-#define CAN_BAUD_RATE 1000U
+#define CAN_BAUD_RATE 500U
 // Main controller ID
 #define MAIN_CONTROLLER_ID 0x05
 
@@ -44,3 +44,7 @@
 // These are set by the dip switches on the controller itself and must be 
 // listed here
 #define SHOCK_CONTROLLER_ONE_ID 0x20
+#define SHOCK_CONTROLLER_TWO_ID 0x21
+
+#define SHOCK_CONTROLLER_HEARTBEAT_INTERVAL 1000U
+#define SHOCK_CONTROLLER_HEARTBEAT_INTERVAL_OFFSET 200U

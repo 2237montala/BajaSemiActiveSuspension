@@ -23,6 +23,10 @@ void ShockControllerNMTChange(uint8_t nodeId,uint8_t idx, CO_NMT_internalState_t
 void ShockControllerHBReceived(uint8_t nodeId, uint8_t idx, void *object);
 void ShockControllerHBStopped(uint8_t nodeId, uint8_t idx, void *object);
 
+void enableHBCallBacks(uint8_t *nodeIds, uint8_t numNodes);
+void resetAllNodes(uint8_t *nodeIds, uint8_t numNodes);
+void enableHBForAllNodes(uint8_t *nodeIds, uint8_t numNodes);
+
 // CANOpen variable/settings -------------------------------------------------------------
 /* Global variables and objects */
 volatile uint16_t   CO_timer1ms = 0U;   /* variable increments each millisecond */
@@ -33,6 +37,9 @@ volatile uint32_t tempTimer = 0;
 TIM_HandleTypeDef msTimer = {.Instance = TIM6};
 #define TMR_TASK_INTERVAL   (1000)          /* Interval of tmrTask thread in microseconds */
 #define INCREMENT_1MS(var)  (var++)         /* Increment 1ms variable in tmrTask */
+
+// CAN Open shock controller variables
+uint8_t shockControllersNodes[NUM_SHOCKS];
 
 // LED values and pins
 #define GREEN_LED_PIN D8
@@ -95,14 +102,16 @@ int main (void){
 /* CANopen communication reset - initialize CANopen objects *******************/
       uint16_t timer1msPrevious;
 
-      // Add one shock controller to the list of monitored notes
-      uint32_t temp = (SHOCK_CONTROLLER_ONE_ID) << 16U;
-      temp |= 1200U;
-      OD_consumerHeartbeatTime[0] = temp;
+      //Add one shock controller to the list of monitored notes
+      shockControllersNodes[0] = SHOCK_CONTROLLER_ONE_ID;
+      shockControllersNodes[1] = SHOCK_CONTROLLER_TWO_ID;
+
+      enableHBForAllNodes(shockControllersNodes,NUM_SHOCKS);
 
       log_printf("CANopenNode - Reset communication...\r\n");
 
       /* disable CAN and CAN interrupts */
+      CO_CANmodule_disable(CO->CANmodule[0]);
 
       /* initialize CANopen */
       err = CO_CANinit(CANmoduleAddress, pendingBitRate);
@@ -158,16 +167,7 @@ int main (void){
       HAL_TIM_Base_Start_IT(&msTimer);
 
       // Set up callbacks for certain functions
-      CO_HBconsumer_initCallbackRemoteReset(CO->HBcons,0,
-                                            NULL,ShockControllerBooted);
-
-      CO_HBconsumer_initCallbackNmtChanged(CO->HBcons,0,
-                                            NULL,ShockControllerNMTChange);
-
-      CO_HBconsumer_initCallbackHeartbeatStarted(CO->HBcons, 0,
-                                                NULL,ShockControllerHBReceived);
-
-      CO_HBconsumer_initCallbackTimeout(CO->HBcons,0,NULL,ShockControllerHBStopped);
+      enableHBCallBacks(shockControllersNodes,NUM_SHOCKS);
 
       /* start CAN */
       CO_CANsetNormalMode(CO->CANmodule[0]);
@@ -204,8 +204,7 @@ int main (void){
           if(onBoot) {
             // Run some code in the beginning to reset network
             printf("Reseting all shock controllers\r\n");
-            CO_NMT_sendCommand(CO->NMT,CO_NMT_RESET_NODE,SHOCK_CONTROLLER_ONE_ID);
-
+            resetAllNodes(shockControllersNodes,NUM_SHOCKS);
             onBoot = false;
           }
 
@@ -434,15 +433,57 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
     
 }
 
-void SetRemoteNodeToOperational(uint8_t nodeId) {
-  if(nodeId == SHOCK_CONTROLLER_ONE_ID) {
-    if(nmtRetryCounter++ < 5) {
-      //printf("Putting back into operational state\r\n");
-      CO_NMT_sendCommand(CO->NMT,CO_NMT_ENTER_OPERATIONAL,nodeId);
-    } else if(nmtRetryCounter == 6) {
-      printf("Too many retry attempts\r\n");
-    }
+void resetAllNodes(uint8_t *nodeIds, uint8_t numNodes) {
+  for(uint8_t i = 0; i < numNodes; i++) {
+    CO_NMT_sendCommand(CO->NMT,CO_NMT_RESET_NODE,nodeIds[i]);
   }
+}
+
+void enableHBForAllNodes(uint8_t *nodeIds, uint8_t numNodes) {
+  for(uint8_t i = 0; i < numNodes; i++) {
+      uint32_t temp = (nodeIds[i]) << 16U;
+      temp |= SHOCK_CONTROLLER_HEARTBEAT_INTERVAL + SHOCK_CONTROLLER_HEARTBEAT_INTERVAL_OFFSET;
+      OD_consumerHeartbeatTime[i] = temp;
+  }
+}
+
+void enableHBCallBacks(uint8_t *nodeIds, uint8_t numNodes) {
+  for(uint8_t i = 0; i < numNodes; i++) {
+    CO_HBconsumer_initCallbackRemoteReset(CO->HBcons,i,
+                                          NULL,ShockControllerBooted);
+
+    CO_HBconsumer_initCallbackNmtChanged(CO->HBcons,i,
+                                          NULL,ShockControllerNMTChange);
+
+    CO_HBconsumer_initCallbackHeartbeatStarted(CO->HBcons, i,
+                                              NULL,ShockControllerHBReceived);
+
+    CO_HBconsumer_initCallbackTimeout(CO->HBcons,i,NULL,ShockControllerHBStopped);
+  }
+  
+}
+
+void SetRemoteNodeToOperational(uint8_t nodeId) {
+  switch(nodeId) {
+    case SHOCK_CONTROLLER_ONE_ID:
+      CO_NMT_sendCommand(CO->NMT,CO_NMT_ENTER_OPERATIONAL,nodeId);
+      break;
+
+    case SHOCK_CONTROLLER_TWO_ID:
+      CO_NMT_sendCommand(CO->NMT,CO_NMT_ENTER_OPERATIONAL,nodeId);
+      break;
+
+    default:
+      break;
+  }
+  // if(nodeId == (SHOCK_CONTROLLER_ONE_ID | SHOCK_CONTROLLER_TWO_ID)) {
+  //   if(nmtRetryCounter++ < 5) {
+  //     //printf("Putting back into operational state\r\n");
+  //     CO_NMT_sendCommand(CO->NMT,CO_NMT_ENTER_OPERATIONAL,nodeId);
+  //   } else if(nmtRetryCounter == 6) {
+  //     printf("Too many retry attempts\r\n");
+  //   }
+  // }
 }
 
 void ShockControllerBooted(uint8_t nodeId, uint8_t idx, void *object) {
@@ -468,6 +509,8 @@ void ShockControllerHBStopped(uint8_t nodeId, uint8_t idx, void *object) {
 }
 
 void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan) {
+    printf("CAN TEC Error: %lu\r\n", (hcan->Instance->ESR & CAN_ESR_TEC_Msk) >> CAN_ESR_TEC_Pos);
+    printf("CAN REC Error: %lu\r\n", (hcan->Instance->ESR & CAN_ESR_REC_Msk) >> CAN_ESR_REC_Pos);
     printf("CAN error: 0x%lx\r\n", hcan->ErrorCode);
 }
 
