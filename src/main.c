@@ -161,8 +161,6 @@ int main (void){
       // Initalize timer device
       HAL_TIM_Base_Init(&msTimer);
 
-      
-
       // Enable interrupts for timer
       HAL_TIM_Base_Start_IT(&msTimer);
 
@@ -218,11 +216,6 @@ int main (void){
             lastNMTCommandTime = HAL_GetTick();
             //CO->TPDO[0]->sendRequest = true;
           }
-
-          //Request sending of TPDOs
-          
-
-          /* Process EEPROM */
 
           /* optional sleep for short time */
       }

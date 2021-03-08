@@ -9,7 +9,14 @@
 
 struct ShockControlSystem shockControlSystems[NUM_SHOCKS];
 
+// Private parameters for the control system
+float32_t cc,c_high,c_low;
+
 // Function pre definitions for helper functions
+
+
+static void calculateControlSystemParameters();
+
 /*
  * PURPOSE
  *      Forces the input value to be between the max and min values
@@ -23,6 +30,7 @@ struct ShockControlSystem shockControlSystems[NUM_SHOCKS];
 static float32_t clamp(float32_t value, float32_t max, float32_t min);
 
 void ControlSystemInit(int numShocks, arm_pid_instance_f32 *pidControllers,struct ShockDamperProfile startingCoefs) {
+    calculateControlSystemParameters();
 
     // Set up all the PID controllers
     for(int i = 0; i < numShocks; i++) {
@@ -34,19 +42,40 @@ void ControlSystemInit(int numShocks, arm_pid_instance_f32 *pidControllers,struc
     }   
 }
 
+static void calculateControlSystemParameters() {
+    // Calculate cc from spring constant and mass of quarter car
+    cc = sqrtf(CONTROL_SPRING_K * CONTROL_SYSTEM_MASS_QUARTER_CAR);
+
+    c_high = CONTROL_SYSTEM_ZETA_MAX * cc;
+    c_low = CONTROL_SYSTEM_ZETA_MIN * cc;
+
+}
+
 float32_t calculateDampingValue(struct ShockControlSystem *shockControlSystemUnit) {
+    // Get the most recent data value
     int dataIndex = shockControlSystemUnit->shockData.mostRecentDataIndex;
-    float32_t dy = shockControlSystemUnit->shockData.velocities[dataIndex].dy;
-    float32_t dx = shockControlSystemUnit->shockData.velocities[dataIndex].dx;
+    // Current shock length (x)
+    float32_t shockLen = 0;
 
-    float32_t fd_ideal = dy * 1.0f;
+    // Change is shock vertical acceleration (dy)
+    float32_t shockVertVel = shockControlSystemUnit->shockData.velocities[dataIndex].dy;
 
-    float32_t c_ideal = ((shockControlSystemUnit->shockData.lastPidOut + fd_ideal) * dx);
+    // The rate of change of shock length (dx)
+    float32_t shockLenVel = shockControlSystemUnit->shockData.velocities[dataIndex].dx;
+    float32_t lastPidOutput = shockControlSystemUnit->shockData.lastPidOut;
 
-    c_ideal = clamp(c_ideal,CONTROL_SYSTEM_C_MAX,CONTROL_SYSTEM_C_MIN);
+    float32_t fd_ideal = shockVertVel * 1.0f;
+    float32_t fd_ideal_star = fd_ideal + lastPidOutput;
 
-    float32_t fd_real = c_ideal * dx;
+    float32_t c_ideal = -1.0f * (fd_ideal_star / shockLenVel);
 
+    // If c_idea is higher than c max then clamp it, same for c min, otherwise keep same value
+    float32_t c_real = clamp(c_ideal,c_high,c_low);
+
+    // Calculate the real damper force 
+    float32_t fd_real = c_ideal * shockLenVel;
+
+    // Calculate the error between the real and the idea damping force
     float32_t pidError = fd_ideal - fd_real;
 
     // Save the new PID output for the next cycle
@@ -58,7 +87,6 @@ float32_t calculateDampingValue(struct ShockControlSystem *shockControlSystemUni
 
 void calculateDampingValues(int numShocks,struct ShockControlSystem *shockUnits, 
                             float32_t *controlSystemOutputs) {
-
     // Copmute the output for each shock PID system
     for(int i = 0; i < numShocks; i++) {
         //int dataIndex = shockUnits[i].shockData.mostRecentDataIndex;

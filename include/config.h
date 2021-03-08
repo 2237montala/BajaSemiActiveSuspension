@@ -16,13 +16,16 @@
 // How many samples will occupy our data buffer
 #define SHOCK_DATA_BUFFER_LEN (SHOCK_DATA_BUFFER_TIME_LEN/SHOCK_DATA_COLLECTION_RATE)
 
-// Control system parameters
+// Control system parameters ------------------------------------------------------------
 // PID saturation values
 #define CONTROL_SYSTEM_ZETA_MIN 0.75f
 #define CONTROL_SYSTEM_ZETA_MAX 4.0f
 
-#define CONTROL_SYSTEM_C_MIN 1342.0f
-#define CONTROL_SYSTEM_C_MAX 7155.0f
+#define CONTROL_SPRING_K 40000.0f
+#define CONTROL_SYSTEM_MASS_QUARTER_CAR 80.0f
+
+// #define CONTROL_SYSTEM_C_MIN 1342.0f
+// #define CONTROL_SYSTEM_C_MAX 7155.0f
 
 // PID parameters
 #define PID_P_NORMAL 0.7f
