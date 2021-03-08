@@ -1,0 +1,11 @@
+{
+    "name": "FifoFast",
+    "description": "A fast and generic fifo for MCUs",
+    "keywords": "FifoFast",
+    "version": "0.8.0",
+    "repository":
+    {
+        "type": "git",
+        "url": "https://github.com/nqtronix/fifofast"
+    }
+  }
