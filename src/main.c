@@ -4,7 +4,8 @@
 #include "stdbool.h"
 #include "Uart.h"
 #include "targetCommon.h"
-//#include "ControlSys.h"
+
+#include "ControlSys.h"
 #include "CANopen.h"
 
 
@@ -40,6 +41,17 @@ TIM_HandleTypeDef msTimer = {.Instance = TIM6};
 
 // CAN Open shock controller variables
 uint8_t shockControllersNodes[NUM_SHOCKS];
+
+// Create a struct holding information about the shock control/embedded system
+struct CarShockControlSystem {
+    // Create field to hold all the shock data
+    struct CarShockData shockData;
+
+    // Create field to hold all the shock control system data
+    struct ShockControlSystem shockControlSystems; 
+};
+
+struct CarShockControlSystem shockEmbeddedSystem;
 
 // LED values and pins
 #define GREEN_LED_PIN D8
@@ -477,6 +489,16 @@ void SetRemoteNodeToOperational(uint8_t nodeId) {
   //     printf("Too many retry attempts\r\n");
   //   }
   // }
+}
+
+void calculateAllDampingValues() {
+
+  for(int i = 0; i < NUM_SHOCKS; i++) {
+    float32_t tempDy, tempDLinearPos;
+    tempDLinearPos = _fff_peek(SHOCK_VELOCITY_FIFO_NAME[i],0).dLinearPos;
+    tempDy = _fff_peek(SHOCK_VELOCITY_FIFO_NAME[i],0).accelY;
+    calculateDampingValue(&(shockEmbeddedSystem.shockControlSystems),i, tempDLinearPos,tempDy);
+  }
 }
 
 void ShockControllerBooted(uint8_t nodeId, uint8_t idx, void *object) {

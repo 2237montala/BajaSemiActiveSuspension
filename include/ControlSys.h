@@ -11,8 +11,10 @@
 #include "ShockDamperProfile.h"
 
 struct ShockControlSystem {
-    struct SingleShockData shockData;
-    arm_pid_instance_f32 shockPidController;
+    //Create field to hold all the shock pid systems
+    arm_pid_instance_f32 shockPidControllers[NUM_SHOCKS];
+    float32_t previousPidOutputs[NUM_SHOCKS];
+    float32_t previousDamperValues[NUM_SHOCKS];
 };
 
 /*
@@ -26,7 +28,7 @@ struct ShockControlSystem {
  * RETURNS
  *      None
  */
-void ControlSystemInit(int numShocks, arm_pid_instance_f32 *pidControllers,
+void ControlSystemInit(struct ShockControlSystem *shockControlSystem, int numShocks,
                        struct ShockDamperProfile startingCoefs);
 
 
@@ -39,7 +41,8 @@ void ControlSystemInit(int numShocks, arm_pid_instance_f32 *pidControllers,
  * RETURNS
  *      A float32_t value that represents the force the damper needs to apply
  */
-float32_t calculateDampingValue(struct ShockControlSystem *shockControlSystemUnit);
+float32_t calculateDampingValue(struct ShockControlSystem *shockControlSystemUnit, 
+                                uint32_t shockIndex, float32_t dx, float32_t dy);
 
 /*
  * PURPOSE
