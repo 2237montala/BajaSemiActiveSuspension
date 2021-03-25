@@ -266,7 +266,6 @@ int main (void){
   return 0;
 }
 
-
 /* timer thread executes in constant intervals ********************************/
 void tmrTask_thread(void){
   /* sleep for interval */

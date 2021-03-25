@@ -98,5 +98,4 @@
 //   }
 
 // }
-
 // HAL_StatusTypeDef CAN_ReceiveMessageNb(CAN_RxHeaderTypeDef messageHeader, uint8_t *message, uint32_t len);
