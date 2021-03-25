@@ -1,0 +1,14 @@
+/example/canopennode_blank
+/canopend
+*.o
+/od_storage*
+
+doc/html/
+
+#eclipse
+.cproject
+.project
+.settings/
+
+#kdevelop
+*.kdev4

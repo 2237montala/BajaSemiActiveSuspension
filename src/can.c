@@ -73,19 +73,29 @@
 //       // Copy the next set of bytes into the message buffer
 //       memcpy(TxData, &message[bytesSent],messageHeader->DLC);
 
+//       // We can add messages if there is less than 3 messages waiting
+//       while(HAL_CAN_GetTxMailboxesFreeLevel(&CanHandle) != 0);
+
 //       error = HAL_CAN_AddTxMessage(&CanHandle, messageHeader, TxData, &TxMailbox);
 
 //       bytesSent += messageHeader->DLC;
-
-
 //   }
 
 //   return error;
-
 // }
 
 // HAL_StatusTypeDef CAN_SendMessageNb(CAN_TxHeaderTypeDef messageHeader, uint8_t *message, uint32_t len);
 
-// HAL_StatusTypeDef CAN_ReceiveMessage(CAN_RxHeaderTypeDef messageHeader, uint8_t *message, uint32_t len);
+// HAL_StatusTypeDef CAN_ReceiveMessage(CAN_RxHeaderTypeDef messageHeader, uint8_t *message,
+//                                      uint32_t len, uint32_t *bytesRead) {
+//   HAL_StatusTypeDef error = HAL_CAN_ERROR_NONE; 
+//   uint32_t bytesSent = 0;
 
+//   while(*bytesRead < len) {
+    
+
+
+//   }
+
+// }
 // HAL_StatusTypeDef CAN_ReceiveMessageNb(CAN_RxHeaderTypeDef messageHeader, uint8_t *message, uint32_t len);
