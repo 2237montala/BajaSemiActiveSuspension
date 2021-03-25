@@ -6,9 +6,11 @@
  */
 
 #include "ControlSys.h"
+#include "stdbool.h"
 
 // Private parameters for the control system
 float32_t cc,c_high,c_low;
+bool firstRun;
 
 // Function pre definitions for helper functions
 
@@ -33,12 +35,15 @@ void ControlSystemInit(struct ShockControlSystem *shockControlSystem, int numSho
 
     // Set up all the PID controllers
     for(int i = 0; i < numShocks; i++) {
-        shockControlSystem->shockPidControllers[i].Kp = startingCoefs.PID_P;
-        shockControlSystem->shockPidControllers[i].Ki = startingCoefs.PID_I;
-        shockControlSystem->shockPidControllers[i].Kd = startingCoefs.PID_D;
+        PidInstanceInitF32(&(shockControlSystem->shockPidControllers[i]));
 
-        arm_pid_init_f32(&(shockControlSystem->shockPidControllers[i]),1);
+        PidInstanceSetParamsF32(&(shockControlSystem->shockPidControllers[i]), 
+                                startingCoefs.PID_P,
+                                startingCoefs.PID_I,
+                                startingCoefs.PID_D);
     }
+
+    firstRun = true;
 }
 
 static void calculateControlSystemParameters() {
@@ -72,9 +77,26 @@ void calculateDampingValue(struct ShockControlSystem *shockControlSystemUnit,
     // Calculate the error between the real and the idea damping force
     float32_t pidError = fd_ideal - fd_real;
 
+    // If this is the first computation then we need to adjust the error calulation
+    // Since we are taking the error of the past computation we need to force the
+    // D part of the PID to be zero. This will be done by making the old error equal
+    // to the current fd_real
+    if(firstRun) {
+        float32_t tempPreData[PID_PREV_COUNT] = {0};
+        tempPreData[PID_PREV_ERROR] = pidError;
+
+        // Set PID to reference a fake pidError for the first run
+        PidInstanceSetInitPrevData(&(shockControlSystemUnit->shockPidControllers[shockIndex]),tempPreData);
+
+        firstRun = false;
+    } else {
+        
+        
+    }
+
     // Save the new PID output for the next cycle
-    float32_t pid = shockControlSystemUnit->previousPidOutputs[shockIndex] + 
-                    arm_pid_f32(&(shockControlSystemUnit->shockPidControllers[shockIndex]), pidError)
+    float32_t pid = lastPidOutput + 
+                    PidComputeF32(&(shockControlSystemUnit->shockPidControllers[shockIndex]), pidError, dt)
                      * dt;
 
     shockControlSystemUnit->previousPidOutputs[shockIndex] = pid;

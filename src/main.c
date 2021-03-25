@@ -122,7 +122,7 @@ int main (void){
   temp.dLinearPos = -0.004905f;
   _fff_write(SHOCK_VELOCITY_FIFO_NAME[0],temp);
 
-   memcpy(&newestData,&temp,sizeof(newestData));
+  memcpy(&newestData,&temp,sizeof(newestData));
 
   // Compute the new damping values
   calculateAllDampingValues(&newestData);

@@ -9,10 +9,11 @@
 
 #include "ShockData.h"
 #include "ShockDamperProfile.h"
+#include "PID.h"
 
 struct ShockControlSystem {
     //Create field to hold all the shock pid systems
-    arm_pid_instance_f32 shockPidControllers[NUM_SHOCKS];
+    struct pid_instance_f32_struct shockPidControllers[NUM_SHOCKS];
     float32_t previousPidOutputs[NUM_SHOCKS];
     float32_t previousDamperValues[NUM_SHOCKS];
 };
