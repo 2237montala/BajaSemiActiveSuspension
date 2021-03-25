@@ -15,7 +15,7 @@ int UART_putString(UART_HandleTypeDef *huart,char *str) {
 
 int UART_putStringNL(UART_HandleTypeDef *huart,char *str) {
     HAL_StatusTypeDef status = HAL_UART_Transmit(huart, (uint8_t *)str, strlen(str), 0xFFFF); 
-    status += HAL_UART_Transmit(huart, NL, strlen(NL), 0xFFFF); 
+    status += HAL_UART_Transmit(huart, (uint8_t *)NL, strlen(NL), 0xFFFF); 
 
     return status;
 }

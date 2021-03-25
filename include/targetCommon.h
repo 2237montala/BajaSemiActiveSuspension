@@ -10,7 +10,7 @@
 
 #include <Bsp.h>
 
-#define NL "\r\n"
+#define NL (char *)("\r\n")
 
 struct ioVec {
     uintptr_t *data;

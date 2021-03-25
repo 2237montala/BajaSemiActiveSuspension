@@ -15,7 +15,7 @@
 #endif
 
 /* Private function prototypes -----------------------------------------------*/
-void createInitialDamperProfiles();
+
 static void SystemClock_Config(void);
 static void Error_Handler(void);
 static void setupDebugUart(UART_HandleTypeDef *huart, uint32_t buadRate);
@@ -27,6 +27,10 @@ void ShockControllerHBStopped(uint8_t nodeId, uint8_t idx, void *object);
 void enableHBCallBacks(uint8_t *nodeIds, uint8_t numNodes);
 void resetAllNodes(uint8_t *nodeIds, uint8_t numNodes);
 void enableHBForAllNodes(uint8_t *nodeIds, uint8_t numNodes);
+
+// Private functions for control system
+void createInitialDamperProfiles();
+void calculateAllDampingValues(ShockVelocitiesStruct_t *velocityData);
 
 // CANOpen variable/settings -------------------------------------------------------------
 /* Global variables and objects */
@@ -42,16 +46,22 @@ TIM_HandleTypeDef msTimer = {.Instance = TIM6};
 // CAN Open shock controller variables
 uint8_t shockControllersNodes[NUM_SHOCKS];
 
-// Create a struct holding information about the shock control/embedded system
-struct CarShockControlSystem {
-    // Create field to hold all the shock data
-    struct CarShockData shockData;
+// Sensor Data Fifos -------------------------------------------------------------------------
+// These need to be in here as they are referenced using the ID passed into the structure macro
+#define SHOCK_SENSOR_DATA_FIFO_NAME shockSensorDataFifo
+#define SHOCK_VELOCITY_FIFO_NAME shockVelocityFifo
 
-    // Create field to hold all the shock control system data
-    struct ShockControlSystem shockControlSystems; 
-};
+_fff_declare_a(ShockSensorDataStruct_t,SHOCK_SENSOR_DATA_FIFO_NAME,SHOCK_DATA_BUFFER_LEN,NUM_SHOCKS);
+_fff_declare_a(ShockVelocitiesStruct_t,SHOCK_VELOCITY_FIFO_NAME,SHOCK_DATA_BUFFER_LEN,NUM_SHOCKS);
 
-struct CarShockControlSystem shockEmbeddedSystem;
+// Initalize the data fifos
+_fff_init_a(SHOCK_SENSOR_DATA_FIFO_NAME,NUM_SHOCKS);
+_fff_init_a(SHOCK_VELOCITY_FIFO_NAME,NUM_SHOCKS);
+
+
+// Create a shock control system struct to be used
+struct ShockControlSystem shockControlSystems; 
+
 
 // LED values and pins
 #define GREEN_LED_PIN D8
@@ -90,15 +100,26 @@ int setup() {
 }
 
 int main (void){
+  /* Configure microcontroller. */
+  setup();
+
+  // Create temporary shockDamperProfile
+  struct ShockDamperProfile defaultProfile = { 0 };
+  defaultProfile.PID_P = PID_P_NORMAL;
+  defaultProfile.PID_I = PID_I_NORMAL;
+  defaultProfile.PID_D = PID_D_NORMAL;
+
+  // Set up the control system
+  ControlSystemInit(&shockControlSystems,NUM_SHOCKS,defaultProfile);
+  //calculateAllDampingValues(&newestData);
+
+  // CAN Open Variables
   CO_ReturnError_t err;
   CO_NMT_reset_cmd_t reset = CO_RESET_NOT;
   uint32_t heapMemoryUsed;
   void *CANmoduleAddress = &CanHandle; /* CAN module address */
   uint8_t activeNodeId = MAIN_CONTROLLER_ID;
   uint16_t pendingBitRate = CAN_BAUD_RATE; 
-
-  /* Configure microcontroller. */
-  setup();
 
   /* Allocate memory but these are statically allocated so no malloc */
   err = CO_new(&heapMemoryUsed);
@@ -111,151 +132,148 @@ int main (void){
   }
 
   while(reset != CO_RESET_APP){
-/* CANopen communication reset - initialize CANopen objects *******************/
-      uint16_t timer1msPrevious;
+    /* CANopen communication reset - initialize CANopen objects *******************/
+    uint16_t timer1msPrevious;
 
-      //Add one shock controller to the list of monitored notes
-      shockControllersNodes[0] = SHOCK_CONTROLLER_ONE_ID;
-      shockControllersNodes[1] = SHOCK_CONTROLLER_TWO_ID;
+    //Add one shock controller to the list of monitored notes
+    shockControllersNodes[0] = SHOCK_CONTROLLER_ONE_ID;
+    shockControllersNodes[1] = SHOCK_CONTROLLER_TWO_ID;
 
-      enableHBForAllNodes(shockControllersNodes,NUM_SHOCKS);
+    enableHBForAllNodes(shockControllersNodes,NUM_SHOCKS);
 
-      log_printf("CANopenNode - Reset communication...\r\n");
+    log_printf("CANopenNode - Reset communication...\r\n");
 
-      /* disable CAN and CAN interrupts */
-      CO_CANmodule_disable(CO->CANmodule[0]);
+    /* disable CAN and CAN interrupts */
+    CO_CANmodule_disable(CO->CANmodule[0]);
 
-      /* initialize CANopen */
-      err = CO_CANinit(CANmoduleAddress, pendingBitRate);
-      if (err != CO_ERROR_NO) {
-          log_printf("Error: CAN initialization failed: %d\r\n", err);
-          return 0;
-      }
-      // err = CO_LSSinit(&pendingNodeId, &pendingBitRate);
-      // if(err != CO_ERROR_NO) {
-      //     log_printf("Error: LSS slave initialization failed: %d\n", err);
-      //     return 0;
-      // }
-      err = CO_CANopenInit(activeNodeId);
-      if(err != CO_ERROR_NO && err != CO_ERROR_NODE_ID_UNCONFIGURED_LSS) {
-          log_printf("Error: CANopen initialization failed: %d\r\n", err);
-          return 0;
-      }
+    /* initialize CANopen */
+    err = CO_CANinit(CANmoduleAddress, pendingBitRate);
+    if (err != CO_ERROR_NO) {
+        log_printf("Error: CAN initialization failed: %d\r\n", err);
+        return 0;
+    }
+    // err = CO_LSSinit(&pendingNodeId, &pendingBitRate);
+    // if(err != CO_ERROR_NO) {
+    //     log_printf("Error: LSS slave initialization failed: %d\n", err);
+    //     return 0;
+    // }
+    err = CO_CANopenInit(activeNodeId);
+    if(err != CO_ERROR_NO && err != CO_ERROR_NODE_ID_UNCONFIGURED_LSS) {
+        log_printf("Error: CANopen initialization failed: %d\r\n", err);
+        return 0;
+    }
 
-      /* Configure Timer interrupt function for execution every 1 millisecond */
+    /* Configure Timer interrupt function for execution every 1 millisecond */
 
-      HAL_TIM_Base_DeInit(&msTimer);
-      HAL_TIM_Base_Stop_IT(&msTimer);
+    HAL_TIM_Base_DeInit(&msTimer);
+    HAL_TIM_Base_Stop_IT(&msTimer);
 
-      // Using timer 6
-      // Timer 4 input clock is APB1
-      // As of now APB1 is 45Mhz
-      // The Timer 4 clock input is multiplied by 2 so 90 Mhz.
-
-
-      __TIM6_CLK_ENABLE();
-
-      // Input = 90 Mhz
-      // Interal divider = 1
-      // Prescaler = 90
-      // Clock rate = (Input)/(Interal divider * prescaler)
-      //            = (90 MHz)/(90) = 1 Mhz
-
-      msTimer.Init.Prescaler = 91-1;
-      msTimer.Init.CounterMode = TIM_COUNTERMODE_UP;
-      msTimer.Init.Period = 1000-1;
-      msTimer.Init.AutoReloadPreload = 0;
-      msTimer.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-      msTimer.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
-
-      /* Configure CAN transmit and receive interrupt */
-
-      // Initalize timer device
-      HAL_TIM_Base_Init(&msTimer);
-
-      // Enable interrupts for timer
-      HAL_TIM_Base_Start_IT(&msTimer);
-
-      // Set up callbacks for certain functions
-      enableHBCallBacks(shockControllersNodes,NUM_SHOCKS);
-
-      /* start CAN */
-      CO_CANsetNormalMode(CO->CANmodule[0]);
-
-      reset = CO_RESET_NOT;
-      timer1msPrevious = CO_timer1ms;
-
-      log_printf("CANopenNode - Running...\r\n");
-      fflush(stdout);
-
-      // Run startup sequence
-      bool startUpComplete = false;
-      uint16_t timer1msCopy, timer1msDiff;
-      uint32_t nmtCommandDelay = 5000;
-      uint32_t lastNMTCommandTime = HAL_GetTick();
-      bool onBoot = true;
-      while(reset == CO_RESET_NOT && !startUpComplete){
-          
-
-          timer1msCopy = CO_timer1ms;
-          timer1msDiff = timer1msCopy - timer1msPrevious;
-          timer1msPrevious = timer1msCopy;
-
-          /* CANopen process */
-          reset = CO_process(CO, (uint32_t)timer1msDiff*1000, NULL);
-
-          // Handle LED Updates
-          LED_red = CO_LED_RED(CO->LEDs, CO_LED_CANopen);
-          LED_green = CO_LED_GREEN(CO->LEDs, CO_LED_CANopen);
-
-          BspGpioWrite(GREEN_LED_PIN,LED_green);
-          BspGpioWrite(RED_LED_PIN,LED_red);
-
-          if(onBoot) {
-            // Run some code in the beginning to reset network
-            printf("Reseting all shock controllers\r\n");
-            resetAllNodes(shockControllersNodes,NUM_SHOCKS);
-            onBoot = false;
-          }
-
-          /* Nonblocking application code may go here. */
-          if(CO->HBcons->allMonitoredOperational) {
-            //startUpComplete = true;
-            //BSP_LED_On(LED2);
-          }
-
-          if(HAL_GetTick() - lastNMTCommandTime >= nmtCommandDelay) {
-            lastNMTCommandTime = HAL_GetTick();
-            //CO->TPDO[0]->sendRequest = true;
-          }
-
-          /* optional sleep for short time */
-      }
+    // Using timer 6
+    // Timer 4 input clock is APB1
+    // As of now APB1 is 45Mhz
+    // The Timer 4 clock input is multiplied by 2 so 90 Mhz.
 
 
-      printf("All nodes are ready\r\n");
+    __TIM6_CLK_ENABLE();
 
-      while(reset == CO_RESET_NOT){
-/* loop for normal program execution ******************************************/
-          timer1msCopy = CO_timer1ms;
-          timer1msDiff = timer1msCopy - timer1msPrevious;
-          timer1msPrevious = timer1msCopy;
+    // Input = 90 Mhz
+    // Interal divider = 1
+    // Prescaler = 90
+    // Clock rate = (Input)/(Interal divider * prescaler)
+    //            = (90 MHz)/(90) = 1 Mhz
 
-          /* CANopen process */
-          reset = CO_process(CO, (uint32_t)timer1msDiff*1000, NULL);
+    msTimer.Init.Prescaler = 91-1;
+    msTimer.Init.CounterMode = TIM_COUNTERMODE_UP;
+    msTimer.Init.Period = 1000-1;
+    msTimer.Init.AutoReloadPreload = 0;
+    msTimer.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    msTimer.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
 
-          /* Nonblocking application code may go here. */
+    /* Configure CAN transmit and receive interrupt */
 
-          /* Process EEPROM */
+    // Initalize timer device
+    HAL_TIM_Base_Init(&msTimer);
 
-          /* optional sleep for short time */
+    // Enable interrupts for timer
+    HAL_TIM_Base_Start_IT(&msTimer);
+
+    // Set up callbacks for certain functions
+    enableHBCallBacks(shockControllersNodes,NUM_SHOCKS);
+
+    /* start CAN */
+    CO_CANsetNormalMode(CO->CANmodule[0]);
+
+    reset = CO_RESET_NOT;
+    timer1msPrevious = CO_timer1ms;
+
+    log_printf("CANopenNode - Running...\r\n");
+    fflush(stdout);
+
+    // Run startup sequence
+    bool startUpComplete = false;
+    uint16_t timer1msCopy, timer1msDiff;
+    uint32_t nmtCommandDelay = 5000;
+    uint32_t lastNMTCommandTime = HAL_GetTick();
+    bool onBoot = true;
+    while(reset == CO_RESET_NOT && !startUpComplete){
+        
+
+        timer1msCopy = CO_timer1ms;
+        timer1msDiff = timer1msCopy - timer1msPrevious;
+        timer1msPrevious = timer1msCopy;
+
+        /* CANopen process */
+        reset = CO_process(CO, (uint32_t)timer1msDiff*1000, NULL);
+
+        // Handle LED Updates
+        LED_red = CO_LED_RED(CO->LEDs, CO_LED_CANopen);
+        LED_green = CO_LED_GREEN(CO->LEDs, CO_LED_CANopen);
+
+        BspGpioWrite(GREEN_LED_PIN,LED_green);
+        BspGpioWrite(RED_LED_PIN,LED_red);
+
+        if(onBoot) {
+          // Run some code in the beginning to reset network
+          printf("Reseting all shock controllers\r\n");
+          resetAllNodes(shockControllersNodes,NUM_SHOCKS);
+          onBoot = false;
+        }
+
+        /* Nonblocking application code may go here. */
+        if(CO->HBcons->allMonitoredOperational) {
+          //startUpComplete = true;
+          //BSP_LED_On(LED2);
+        }
+
+        if(HAL_GetTick() - lastNMTCommandTime >= nmtCommandDelay) {
+          lastNMTCommandTime = HAL_GetTick();
+          //CO->TPDO[0]->sendRequest = true;
+        }
+
+        /* optional sleep for short time */
+    }
+
+    printf("All nodes are ready\r\n");
+
+    while(reset == CO_RESET_NOT){
+      /* loop for normal program execution ******************************************/
+      timer1msCopy = CO_timer1ms;
+      timer1msDiff = timer1msCopy - timer1msPrevious;
+      timer1msPrevious = timer1msCopy;
+
+      /* CANopen process */
+      reset = CO_process(CO, (uint32_t)timer1msDiff*1000, NULL);
+
+      /* Nonblocking application code may go here. */
+
+      /* Process EEPROM */
+
+      /* optional sleep for short time */
       }
   }
 
-
-/* program exit ***************************************************************/
+  /* program exit ***************************************************************/
   /* stop threads */
-
 
   /* delete objects from memory */
   CO_delete((void*) 0/* CAN module address */);
@@ -490,13 +508,16 @@ void SetRemoteNodeToOperational(uint8_t nodeId) {
   // }
 }
 
-void calculateAllDampingValues() {
-
+void calculateAllDampingValues(ShockVelocitiesStruct_t *velocityData) {
   for(int i = 0; i < NUM_SHOCKS; i++) {
     float32_t tempDy, tempDLinearPos;
-    tempDLinearPos = _fff_peek(SHOCK_VELOCITY_FIFO_NAME[i],0).dLinearPos;
-    tempDy = _fff_peek(SHOCK_VELOCITY_FIFO_NAME[i],0).accelY;
-    calculateDampingValue(&(shockEmbeddedSystem.shockControlSystems),i, tempDLinearPos,tempDy);
+    tempDLinearPos = velocityData->dLinearPos;
+    tempDy = velocityData->dy;
+    calculateDampingValue(&shockControlSystems, i, tempDLinearPos, 
+                          tempDy, SHOCK_DATA_COLLECTION_RATE_SEC);
+
+    // Take new damper value and convert to valve position
+    // TODO: write this function
   }
 }
 

@@ -6,9 +6,11 @@
  */
 
 #include "ControlSys.h"
+#include "stdbool.h"
 
 // Private parameters for the control system
 float32_t cc,c_high,c_low;
+bool firstRun;
 
 // Function pre definitions for helper functions
 
@@ -33,12 +35,15 @@ void ControlSystemInit(struct ShockControlSystem *shockControlSystem, int numSho
 
     // Set up all the PID controllers
     for(int i = 0; i < numShocks; i++) {
-        shockControlSystem->shockPidControllers[i].Kp = startingCoefs.PID_P;
-        shockControlSystem->shockPidControllers[i].Ki = startingCoefs.PID_I;
-        shockControlSystem->shockPidControllers[i].Kd = startingCoefs.PID_D;
+        PidInstanceInitF32(&(shockControlSystem->shockPidControllers[i]));
 
-        arm_pid_init_f32(&(shockControlSystem->shockPidControllers[i]),1);
+        PidInstanceSetParamsF32(&(shockControlSystem->shockPidControllers[i]), 
+                                startingCoefs.PID_P,
+                                startingCoefs.PID_I,
+                                startingCoefs.PID_D);
     }
+
+    firstRun = true;
 }
 
 static void calculateControlSystemParameters() {
@@ -49,8 +54,8 @@ static void calculateControlSystemParameters() {
     c_low = CONTROL_SYSTEM_ZETA_MIN * cc;
 }
 
-float32_t calculateDampingValue(struct ShockControlSystem *shockControlSystemUnit, 
-                                uint32_t shockIndex, float32_t dx, float32_t dy) {
+void calculateDampingValue(struct ShockControlSystem *shockControlSystemUnit, 
+                                uint32_t shockIndex, float32_t dx, float32_t dy, float32_t dt) {
     // Change is shock vertical acceleration (dy)
     float32_t shockVertVel = dy;
 
@@ -58,7 +63,7 @@ float32_t calculateDampingValue(struct ShockControlSystem *shockControlSystemUni
     float32_t shockLenVel = dx;
     float32_t lastPidOutput = shockControlSystemUnit->previousPidOutputs[shockIndex];
 
-    float32_t fd_ideal = shockVertVel * 1.0f;
+    float32_t fd_ideal = -1.0f * shockVertVel * cc;
     float32_t fd_ideal_star = fd_ideal + lastPidOutput;
 
     float32_t c_ideal = -1.0f * (fd_ideal_star / shockLenVel);
@@ -67,27 +72,37 @@ float32_t calculateDampingValue(struct ShockControlSystem *shockControlSystemUni
     float32_t c_real = clamp(c_ideal,c_high,c_low);
 
     // Calculate the real damper force 
-    float32_t fd_real = c_real * shockLenVel;
+    float32_t fd_real = -1.0f * c_real * shockLenVel;
 
     // Calculate the error between the real and the idea damping force
     float32_t pidError = fd_ideal - fd_real;
 
+    // If this is the first computation then we need to adjust the error calulation
+    // Since we are taking the error of the past computation we need to force the
+    // D part of the PID to be zero. This will be done by making the old error equal
+    // to the current fd_real
+    if(firstRun) {
+        float32_t tempPreData[PID_PREV_COUNT] = {0};
+        tempPreData[PID_PREV_ERROR] = pidError;
+
+        // Set PID to reference a fake pidError for the first run
+        PidInstanceSetInitPrevData(&(shockControlSystemUnit->shockPidControllers[shockIndex]),tempPreData);
+
+        firstRun = false;
+    } else {
+        
+        
+    }
+
     // Save the new PID output for the next cycle
-    shockControlSystemUnit->previousPidOutputs[shockIndex] = 
-        arm_pid_f32(&(shockControlSystemUnit->shockPidControllers[shockIndex]), pidError);
+    float32_t pid = lastPidOutput + 
+                    PidComputeF32(&(shockControlSystemUnit->shockPidControllers[shockIndex]), pidError, dt)
+                     * dt;
 
-    return fd_real;
+    shockControlSystemUnit->previousPidOutputs[shockIndex] = pid;
+
+    shockControlSystemUnit->previousDamperValues[shockIndex] = fd_real;
 }
-
-// void calculateDampingValues(int numShocks,struct ShockControlSystem *shockUnits, 
-//                             float32_t *controlSystemOutputs) {
-//     // Copmute the output for each shock PID system
-//     for(int i = 0; i < numShocks; i++) {
-//         //int dataIndex = shockUnits[i].shockData.mostRecentDataIndex;
-//         controlSystemOutputs[i] = calculateDampingValue(&shockUnits[i]);
-//     }
-// }
-
 
 //------------ Helper Function ---------------------------------
 static float clamp(float32_t value, float32_t max, float32_t min) {
