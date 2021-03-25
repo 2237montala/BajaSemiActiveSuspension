@@ -49,8 +49,8 @@ static void calculateControlSystemParameters() {
     c_low = CONTROL_SYSTEM_ZETA_MIN * cc;
 }
 
-float32_t calculateDampingValue(struct ShockControlSystem *shockControlSystemUnit, 
-                                uint32_t shockIndex, float32_t dx, float32_t dy) {
+void calculateDampingValue(struct ShockControlSystem *shockControlSystemUnit, 
+                                uint32_t shockIndex, float32_t dx, float32_t dy, float32_t dt) {
     // Change is shock vertical acceleration (dy)
     float32_t shockVertVel = dy;
 
@@ -58,7 +58,7 @@ float32_t calculateDampingValue(struct ShockControlSystem *shockControlSystemUni
     float32_t shockLenVel = dx;
     float32_t lastPidOutput = shockControlSystemUnit->previousPidOutputs[shockIndex];
 
-    float32_t fd_ideal = shockVertVel * 1.0f;
+    float32_t fd_ideal = -1.0f * shockVertVel * cc;
     float32_t fd_ideal_star = fd_ideal + lastPidOutput;
 
     float32_t c_ideal = -1.0f * (fd_ideal_star / shockLenVel);
@@ -67,27 +67,20 @@ float32_t calculateDampingValue(struct ShockControlSystem *shockControlSystemUni
     float32_t c_real = clamp(c_ideal,c_high,c_low);
 
     // Calculate the real damper force 
-    float32_t fd_real = c_real * shockLenVel;
+    float32_t fd_real = -1.0f * c_real * shockLenVel;
 
     // Calculate the error between the real and the idea damping force
     float32_t pidError = fd_ideal - fd_real;
 
     // Save the new PID output for the next cycle
-    shockControlSystemUnit->previousPidOutputs[shockIndex] = 
-        arm_pid_f32(&(shockControlSystemUnit->shockPidControllers[shockIndex]), pidError);
+    float32_t pid = shockControlSystemUnit->previousPidOutputs[shockIndex] + 
+                    arm_pid_f32(&(shockControlSystemUnit->shockPidControllers[shockIndex]), pidError)
+                     * dt;
 
-    return fd_real;
+    shockControlSystemUnit->previousPidOutputs[shockIndex] = pid;
+
+    shockControlSystemUnit->previousDamperValues[shockIndex] = fd_real;
 }
-
-// void calculateDampingValues(int numShocks,struct ShockControlSystem *shockUnits, 
-//                             float32_t *controlSystemOutputs) {
-//     // Copmute the output for each shock PID system
-//     for(int i = 0; i < numShocks; i++) {
-//         //int dataIndex = shockUnits[i].shockData.mostRecentDataIndex;
-//         controlSystemOutputs[i] = calculateDampingValue(&shockUnits[i]);
-//     }
-// }
-
 
 //------------ Helper Function ---------------------------------
 static float clamp(float32_t value, float32_t max, float32_t min) {

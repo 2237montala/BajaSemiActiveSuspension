@@ -16,10 +16,10 @@ struct fifoObject FifoInit(size_t numByteOfStoredItem, void * staticBuff ,size_t
     return newFifo;
 }
 
-bool FifoEnqueue(struct fifoObject fifo, void * newItem) {
-    if(!FifoFull(fifo)) {
-        // Add item to the next value of the array
-        // Copy the item to the tail by using the memory address of the array
-        memcpy(fifo.data + fifo.tail, newItem, fifo.itemSize);
-    }
-}
+// bool FifoEnqueue(struct fifoObject fifo, void * newItem) {
+//     // if(!FifoFull(fifo)) {
+//     //     // Add item to the next value of the array
+//     //     // Copy the item to the tail by using the memory address of the array
+//     //     memcpy(fifo.data + fifo.tail, newItem, fifo.itemSize);
+//     // }
+// }

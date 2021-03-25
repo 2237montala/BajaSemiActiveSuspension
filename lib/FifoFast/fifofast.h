@@ -58,7 +58,7 @@
 //    4 <= x <= 128	| best
 //         x == 256	| ok
 //  512 <= x		| slow
-#define FIFOFAST_MAX_DEPTH_POINTABLE	128
+#define FIFOFAST_MAX_DEPTH_POINTABLE	256
 
 
 //////////////////////////////////////////////////////////////////////////

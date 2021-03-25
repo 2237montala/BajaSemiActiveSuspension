@@ -8,6 +8,7 @@
 
 // How many milliseconds between shock data samples
 #define SHOCK_DATA_COLLECTION_RATE 5
+#define SHOCK_DATA_COLLECTION_RATE_SEC (SHOCK_DATA_COLLECTION_RATE/1000.0f)
 
 // How many milliseconds of data should be kept in order
 // to determine what the car is doing
@@ -36,7 +37,7 @@
 #define NUM_SHOCK_PROFILES 1
 
 
-#define NUM_SHOCKS 2
+#define NUM_SHOCKS 1
 
 // CANOpen defines ----------------------------------------------------------------------
 #define CAN_BAUD_RATE 500U
