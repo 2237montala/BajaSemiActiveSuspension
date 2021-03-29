@@ -4,6 +4,7 @@
 #include "stdbool.h"
 #include "Uart.h"
 #include "targetCommon.h"
+#include "fifofast.h"
 
 #include "ControlSys.h"
 #include "CANopen.h"
@@ -28,9 +29,14 @@ void enableHBCallBacks(uint8_t *nodeIds, uint8_t numNodes);
 void resetAllNodes(uint8_t *nodeIds, uint8_t numNodes);
 void enableHBForAllNodes(uint8_t *nodeIds, uint8_t numNodes);
 
+bool CopyShockDataFromOD();
+static bool CopyArrayDataFromOD(uint32_t odIndex, void *dataPtr, uint32_t *dataLenInBytes);
+static bool CopyVarFromOD(uint32_t odIndex, void *varPtr, uint32_t *varByteSize);
+
 // Private functions for control system
 void createInitialDamperProfiles();
 void calculateAllDampingValues(ShockVelocitiesStruct_t *velocityData);
+
 
 // CANOpen variable/settings -------------------------------------------------------------
 /* Global variables and objects */
@@ -137,7 +143,7 @@ int main (void){
 
     //Add one shock controller to the list of monitored notes
     shockControllersNodes[0] = SHOCK_CONTROLLER_ONE_ID;
-    shockControllersNodes[1] = SHOCK_CONTROLLER_TWO_ID;
+    //shockControllersNodes[1] = SHOCK_CONTROLLER_TWO_ID;
 
     enableHBForAllNodes(shockControllersNodes,NUM_SHOCKS);
 
@@ -162,6 +168,8 @@ int main (void){
         log_printf("Error: CANopen initialization failed: %d\r\n", err);
         return 0;
     }
+
+    CopyShockDataFromOD();
 
     /* Configure Timer interrupt function for execution every 1 millisecond */
 
@@ -451,8 +459,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
     if(htim->Instance == TIM6) {
         tmrTask_thread();
     }
-    
-    
 }
 
 void resetAllNodes(uint8_t *nodeIds, uint8_t numNodes) {
@@ -482,7 +488,6 @@ void enableHBCallBacks(uint8_t *nodeIds, uint8_t numNodes) {
 
     CO_HBconsumer_initCallbackTimeout(CO->HBcons,i,NULL,ShockControllerHBStopped);
   }
-  
 }
 
 void SetRemoteNodeToOperational(uint8_t nodeId) {
@@ -547,5 +552,93 @@ void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan) {
     printf("CAN TEC Error: %lu\r\n", (hcan->Instance->ESR & CAN_ESR_TEC_Msk) >> CAN_ESR_TEC_Pos);
     printf("CAN REC Error: %lu\r\n", (hcan->Instance->ESR & CAN_ESR_REC_Msk) >> CAN_ESR_REC_Pos);
     printf("CAN error: 0x%lx\r\n", hcan->ErrorCode);
+}
+
+bool CopyShockDataFromOD() {
+  static ShockSensorDataStruct_t tempData;
+
+
+
+  uint32_t dataLenInBytes = 0;
+  float32_t accelArrayPtr[NUMBER_OF_AXIS];
+
+  bool status = CopyArrayDataFromOD(OD_6000_readShockAccel, (void*)accelArrayPtr, &dataLenInBytes);
+  printf("Output of func, %d",status);
+  // if(status == false) {
+  //   // Problem getting accel data array information
+  //   return false;
+  // }
+
+  // if(dataPtr == NULL) {
+  //   // Something went wrong with getting the data pointer, shouldn't be null
+  //   return false;
+  // }
+
+  // Copy OD accel data to the local struct
+  // OD_getLength returns the length of 
+  memcpy(tempData.accels,accelArrayPtr, dataLenInBytes);
+
+  uint8_t accelStatus = 0;
+  uint8_t *accelStatusPtr = &accelStatus;  
+
+  // Copy over accel status from OD
+  if(!CopyVarFromOD(OD_6050_readShockAccelStatus, (void *)accelStatusPtr, &dataLenInBytes)) {
+    return false;
+  }
+
+  
+  //memcpy(tempData.inFreefall,(void *)dataPtr,dataElementLen);
+
+  // TODO: Add roll pitch and yaw
+  // // Copy over roll,pitch, and yaw from the OD
+  // if(!CopyArrayDataFromOD(OD_6100_readAccelRPY,&numDataElements,&dataElementLen,dataPtr)) {
+  //   // Problem getting accel data array information
+  //   return false;
+  // }
+
+  // memcpy(tempData.rpw,(void*)dataPtr,(numDataElements * dataElementLen));
+
+  return true;
+}
+
+static bool CopyArrayDataFromOD(uint32_t odIndex, void *dataPtr, uint32_t *dataLenInBytes) {
+  uint32_t dataIndex = CO_OD_find(CO->SDO[0],odIndex);
+
+  if(dataIndex == 0xFFFF) {
+    // OD index not found
+    return false;
+  }
+
+  // Get the number of items in the OD index
+  // Value is returned as a pointer to the variable so cast is as that variable type
+  uint8_t *numElementsStored = (uint8_t *) CO_OD_getDataPointer(CO->SDO[0],dataIndex,0);
+
+  // Get the pointer to the data where CAN Open stores the most recent shock accel data 
+  // This is subIndex > 1
+  dataPtr = CO_OD_getDataPointer(CO->SDO[0],dataIndex,1);
+
+  // Array element length 
+  if(*numElementsStored == 0) {
+    *dataLenInBytes = 0;
+  } else {
+    uint32_t dateElementLen = CO_OD_getLength(CO->SDO[0],dataIndex,1);
+    *dataLenInBytes = *numElementsStored * dateElementLen;
+  }
+  return true;
+}
+
+static bool CopyVarFromOD(uint32_t odIndex, void *varPtr, uint32_t *varByteSize) {
+  uint32_t dataIndex = CO_OD_find(CO->SDO[0],odIndex);
+
+  if(dataIndex == 0xFFFF) {
+    // OD index not found
+    return false;
+  }
+
+  varPtr = CO_OD_getDataPointer(CO->SDO[0],dataIndex,0);
+
+  *varByteSize = CO_OD_getLength(CO->SDO[0],dataIndex,1);
+
+  return true;
 }
 
