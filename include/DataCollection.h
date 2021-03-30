@@ -18,10 +18,17 @@ struct ShockDataFifos {
 _fff_init_a(SHOCK_SENSOR_DATA_FIFO_NAME,NUM_SHOCKS);
 _fff_init_a(SHOCK_VELOCITY_FIFO_NAME,NUM_SHOCKS);
 
+// Struct to hold pointer and data length for variables inside the OD
+struct VariableToOdMappingStruct {
+  uint32_t odIndex;
+  void *odDataPtr;
+  uint32_t dataLengthInBytes;
+};
 
+bool DataCollectionInit(CO_t *CO, uint32_t shockSensorAccelOdIndex, uint32_t shockSensorStatusOdIndex,
+                        uint32_t shockSensorRpwOdIndex, uint32_t shockSensorIdOdIndex);
 
-bool CopyShockDataFromOD(CO_t *CO, ShockSensorDataStruct_t *shockDataStruct, uint32_t shockSnesorAccelOdIndex,
-                         uint32_t shockSensorStatusOdIndex, uint32_t shockSensorRpwOdIndex);
+bool CopyShockDataFromOD(uint8_t *senderCanId, ShockSensorDataStruct_t *shockDataStruct);
 
 /*
  * PURPOSE
@@ -35,7 +42,7 @@ bool CopyShockDataFromOD(CO_t *CO, ShockSensorDataStruct_t *shockDataStruct, uin
  * RETURNS
  *    true if no error occur, false otherwise
  */
-static bool CopyArrayDataFromOD(CO_t *CO, uint32_t odIndex, void **dataPtr, uint32_t *dataLenInBytes);
+//static bool CopyArrayDataFromOD(CO_t *CO, uint32_t odIndex, void **dataPtr, uint32_t *dataLenInBytes);
 
 /*
  * PURPOSE
@@ -49,4 +56,6 @@ static bool CopyArrayDataFromOD(CO_t *CO, uint32_t odIndex, void **dataPtr, uint
  * RETURNS
  *  true if no error, false otherwise
  */
-static bool CopyVarFromOD(CO_t *CO, uint32_t odIndex, void **varPtr, uint32_t *varByteSize);
+//static bool CopyVarFromOD(CO_t *CO, uint32_t odIndex, void **varPtr, uint32_t *varByteSize);
+
+static bool FillOdMapping(CO_SDO_t *SDO, struct VariableToOdMappingStruct *mappingStruct, uint32_t odIndexToMap);
