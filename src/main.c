@@ -29,13 +29,11 @@ void enableHBCallBacks(uint8_t *nodeIds, uint8_t numNodes);
 void resetAllNodes(uint8_t *nodeIds, uint8_t numNodes);
 void enableHBForAllNodes(uint8_t *nodeIds, uint8_t numNodes);
 
-bool CopyShockDataFromOD();
-static bool CopyArrayDataFromOD(uint32_t odIndex, void **dataPtr, uint32_t *dataLenInBytes);
-static bool CopyVarFromOD(uint32_t odIndex, void **varPtr, uint32_t *varByteSize);
+
 
 // Private functions for control system
 void createInitialDamperProfiles();
-void calculateAllDampingValues(ShockVelocitiesStruct_t *velocityData);
+
 
 
 // CANOpen variable/settings -------------------------------------------------------------
@@ -47,27 +45,19 @@ volatile uint32_t tempTimer = 0;
 // Timer for running CANOpen background tasks
 TIM_HandleTypeDef msTimer = {.Instance = TIM6};
 #define TMR_TASK_INTERVAL   (1000)          /* Interval of tmrTask thread in microseconds */
+#define TMR_TASK_INTERVAL_MS (TMR_TASK_INTERVAL/1000)
 #define INCREMENT_1MS(var)  (var++)         /* Increment 1ms variable in tmrTask */
 
 // CAN Open shock controller variables
 uint8_t shockControllersNodes[NUM_SHOCKS];
 
-// Sensor Data Fifos -------------------------------------------------------------------------
-// These need to be in here as they are referenced using the ID passed into the structure macro
-#define SHOCK_SENSOR_DATA_FIFO_NAME shockSensorDataFifo
-#define SHOCK_VELOCITY_FIFO_NAME shockVelocityFifo
-
-_fff_declare_a(ShockSensorDataStruct_t,SHOCK_SENSOR_DATA_FIFO_NAME,SHOCK_DATA_BUFFER_LEN,NUM_SHOCKS);
-_fff_declare_a(ShockVelocitiesStruct_t,SHOCK_VELOCITY_FIFO_NAME,SHOCK_DATA_BUFFER_LEN,NUM_SHOCKS);
-
-// Initalize the data fifos
-_fff_init_a(SHOCK_SENSOR_DATA_FIFO_NAME,NUM_SHOCKS);
-_fff_init_a(SHOCK_VELOCITY_FIFO_NAME,NUM_SHOCKS);
-
+// Sync counter 
+uint8_t syncCounter = 0;
+uint8_t numSyncPerDataReq = SHOCK_DATA_COLLECTION_RATE/TMR_TASK_INTERVAL_MS;
+bool expectingNewData = false;
 
 // Create a shock control system struct to be used
 struct ShockControlSystem shockControlSystems; 
-
 
 // LED values and pins
 #define GREEN_LED_PIN D8
@@ -303,6 +293,16 @@ void tmrTask_thread(void){
       /* Process Sync */
       syncWas = CO_process_SYNC(CO, TMR_TASK_INTERVAL, NULL);
 
+      // Set a flag when we expect new data from the sensors
+      if(syncWas) {
+        syncCounter++;
+        if(syncCounter == numSyncPerDataReq) {
+          expectingNewData = true;
+          syncCounter = 0;
+        }
+      }
+
+
       /* Read inputs */
       CO_process_RPDO(CO, syncWas);
 
@@ -451,9 +451,7 @@ PUTCHAR_PROTOTYPE
   return len;
 }
 
-void TIM6_DAC_IRQHandler(void) {
-    HAL_TIM_IRQHandler(&msTimer);
-}
+
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
     if(htim->Instance == TIM6) {
@@ -513,18 +511,7 @@ void SetRemoteNodeToOperational(uint8_t nodeId) {
   // }
 }
 
-void calculateAllDampingValues(ShockVelocitiesStruct_t *velocityData) {
-  for(int i = 0; i < NUM_SHOCKS; i++) {
-    float32_t tempDy, tempDLinearPos;
-    tempDLinearPos = velocityData->dLinearPos;
-    tempDy = velocityData->dy;
-    calculateDampingValue(&shockControlSystems, i, tempDLinearPos, 
-                          tempDy, SHOCK_DATA_COLLECTION_RATE_SEC);
 
-    // Take new damper value and convert to valve position
-    // TODO: write this function
-  }
-}
 
 void ShockControllerBooted(uint8_t nodeId, uint8_t idx, void *object) {
   printf("%lu: Shock controller node %d booted\r\n",HAL_GetTick(),nodeId);
@@ -553,109 +540,3 @@ void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan) {
     printf("CAN REC Error: %lu\r\n", (hcan->Instance->ESR & CAN_ESR_REC_Msk) >> CAN_ESR_REC_Pos);
     printf("CAN error: 0x%lx\r\n", hcan->ErrorCode);
 }
-
-bool CopyShockDataFromOD() {
-  static ShockSensorDataStruct_t tempData;
-
-  // Testing to make sure it gets the new values
-  // CO_OD_RAM.readShockAccel[0] = 1;
-  // CO_OD_RAM.readShockAccel[1] = 2;
-  // CO_OD_RAM.readShockAccel[2] = 3;
-
-  // CO_OD_RAM.readShockAccelStatus = 0x1;
-
-  uint32_t dataLenInBytes = 0;
-  void* accelArrayVoidPtr = NULL;
-
-  if(!CopyArrayDataFromOD(OD_6000_readShockAccel, &accelArrayVoidPtr, &dataLenInBytes)) {
-    // Problem getting accel data array information
-    return false;
-  }
-
-  if(accelArrayVoidPtr == NULL) {
-    // Something went wrong with getting the data pointer, shouldn't be null
-    return false;
-  }
-
-  // Copy OD accel data to the local struct
-  // OD_getLength returns the length of 
-  memcpy(tempData.accels,accelArrayVoidPtr, dataLenInBytes);
-
-  // Create pointer to hold the location of the OD variable
-  void *accelStatusVoidPtr = NULL;
-
-  // Get the pointer to the data and its length
-  // Should be a single byte  since the accel status is a byte
-  if(!CopyVarFromOD(OD_6050_readShockAccelStatus, &accelStatusVoidPtr, &dataLenInBytes)) {
-    return false;
-  }
-
-  if(accelStatusVoidPtr == NULL) {
-    return false;
-  }
-
-  // Copy the data over to the array
-  memcpy(&(tempData.inFreefall),accelStatusVoidPtr,dataLenInBytes);
-
-
-  // TODO: Add roll pitch and yaw
-
-  return true;
-}
-
-/*
- * PURPOSE
- *    Get the pointer to the data stored in the Object Directory. CAN Open stores recent
- *    messages in the Object Directory RAM struct. The pointer to the data is known at 
- *    compile time but this function makes it sort of dymanic
- * PARAMETERS
- *    odIndex - The index of the item in the Object Directory
- *    **dataPtr - A pointer to the pointer where the OD data pointer will be stored
- *    *dataLenInBytes - The length of the array in bytes
- * RETURNS
- *    true if no error occur, false otherwise
- */
-static bool CopyArrayDataFromOD(uint32_t odIndex, void **dataPtr, uint32_t *dataLenInBytes) {
-  uint32_t dataIndex = CO_OD_find(CO->SDO[0],odIndex);
-
-  if(dataIndex == 0xFFFF) {
-    // OD index not found
-    return false;
-  }
-
-  // Get the number of items in the OD index
-  // Value is returned as a pointer to the variable so cast is as that variable type
-  uint8_t *numElementsStored = (uint8_t *) CO_OD_getDataPointer(CO->SDO[0],dataIndex,0);
-
-  // Get the pointer to the data where CAN Open stores the most recent shock accel data 
-  // This is subIndex > 1
-  void *temp =  CO_OD_getDataPointer(CO->SDO[0],dataIndex,1);
-  printf("%p",temp);
-  *dataPtr = temp;
-  printf("%p",dataPtr);
-
-  // Array element length 
-  if(*numElementsStored == 0) {
-    *dataLenInBytes = 0;
-  } else {
-    uint32_t dateElementLen = CO_OD_getLength(CO->SDO[0],dataIndex,1);
-    *dataLenInBytes = *numElementsStored * dateElementLen;
-  }
-  return true;
-}
-
-static bool CopyVarFromOD(uint32_t odIndex, void **varPtr, uint32_t *varByteSize) {
-  uint32_t dataIndex = CO_OD_find(CO->SDO[0],odIndex);
-
-  if(dataIndex == 0xFFFF) {
-    // OD index not found
-    return false;
-  }
-
-  *varPtr = CO_OD_getDataPointer(CO->SDO[0],dataIndex,0);
-
-  *varByteSize = CO_OD_getLength(CO->SDO[0],dataIndex,1);
-
-  return true;
-}
-
