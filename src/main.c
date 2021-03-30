@@ -30,8 +30,8 @@ void resetAllNodes(uint8_t *nodeIds, uint8_t numNodes);
 void enableHBForAllNodes(uint8_t *nodeIds, uint8_t numNodes);
 
 bool CopyShockDataFromOD();
-static bool CopyArrayDataFromOD(uint32_t odIndex, void *dataPtr, uint32_t *dataLenInBytes);
-static bool CopyVarFromOD(uint32_t odIndex, void *varPtr, uint32_t *varByteSize);
+static bool CopyArrayDataFromOD(uint32_t odIndex, void **dataPtr, uint32_t *dataLenInBytes);
+static bool CopyVarFromOD(uint32_t odIndex, void **varPtr, uint32_t *varByteSize);
 
 // Private functions for control system
 void createInitialDamperProfiles();
@@ -557,51 +557,65 @@ void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan) {
 bool CopyShockDataFromOD() {
   static ShockSensorDataStruct_t tempData;
 
+  // Testing to make sure it gets the new values
+  // CO_OD_RAM.readShockAccel[0] = 1;
+  // CO_OD_RAM.readShockAccel[1] = 2;
+  // CO_OD_RAM.readShockAccel[2] = 3;
 
+  // CO_OD_RAM.readShockAccelStatus = 0x1;
 
   uint32_t dataLenInBytes = 0;
-  float32_t accelArrayPtr[NUMBER_OF_AXIS];
+  void* accelArrayVoidPtr = NULL;
 
-  bool status = CopyArrayDataFromOD(OD_6000_readShockAccel, (void*)accelArrayPtr, &dataLenInBytes);
-  printf("Output of func, %d",status);
-  // if(status == false) {
-  //   // Problem getting accel data array information
-  //   return false;
-  // }
-
-  // if(dataPtr == NULL) {
-  //   // Something went wrong with getting the data pointer, shouldn't be null
-  //   return false;
-  // }
-
-  // Copy OD accel data to the local struct
-  // OD_getLength returns the length of 
-  memcpy(tempData.accels,accelArrayPtr, dataLenInBytes);
-
-  uint8_t accelStatus = 0;
-  uint8_t *accelStatusPtr = &accelStatus;  
-
-  // Copy over accel status from OD
-  if(!CopyVarFromOD(OD_6050_readShockAccelStatus, (void *)accelStatusPtr, &dataLenInBytes)) {
+  if(!CopyArrayDataFromOD(OD_6000_readShockAccel, &accelArrayVoidPtr, &dataLenInBytes)) {
+    // Problem getting accel data array information
     return false;
   }
 
-  
-  //memcpy(tempData.inFreefall,(void *)dataPtr,dataElementLen);
+  if(accelArrayVoidPtr == NULL) {
+    // Something went wrong with getting the data pointer, shouldn't be null
+    return false;
+  }
+
+  // Copy OD accel data to the local struct
+  // OD_getLength returns the length of 
+  memcpy(tempData.accels,accelArrayVoidPtr, dataLenInBytes);
+
+  // Create pointer to hold the location of the OD variable
+  void *accelStatusVoidPtr = NULL;
+
+  // Get the pointer to the data and its length
+  // Should be a single byte  since the accel status is a byte
+  if(!CopyVarFromOD(OD_6050_readShockAccelStatus, &accelStatusVoidPtr, &dataLenInBytes)) {
+    return false;
+  }
+
+  if(accelStatusVoidPtr == NULL) {
+    return false;
+  }
+
+  // Copy the data over to the array
+  memcpy(&(tempData.inFreefall),accelStatusVoidPtr,dataLenInBytes);
+
 
   // TODO: Add roll pitch and yaw
-  // // Copy over roll,pitch, and yaw from the OD
-  // if(!CopyArrayDataFromOD(OD_6100_readAccelRPY,&numDataElements,&dataElementLen,dataPtr)) {
-  //   // Problem getting accel data array information
-  //   return false;
-  // }
-
-  // memcpy(tempData.rpw,(void*)dataPtr,(numDataElements * dataElementLen));
 
   return true;
 }
 
-static bool CopyArrayDataFromOD(uint32_t odIndex, void *dataPtr, uint32_t *dataLenInBytes) {
+/*
+ * PURPOSE
+ *    Get the pointer to the data stored in the Object Directory. CAN Open stores recent
+ *    messages in the Object Directory RAM struct. The pointer to the data is known at 
+ *    compile time but this function makes it sort of dymanic
+ * PARAMETERS
+ *    odIndex - The index of the item in the Object Directory
+ *    **dataPtr - A pointer to the pointer where the OD data pointer will be stored
+ *    *dataLenInBytes - The length of the array in bytes
+ * RETURNS
+ *    true if no error occur, false otherwise
+ */
+static bool CopyArrayDataFromOD(uint32_t odIndex, void **dataPtr, uint32_t *dataLenInBytes) {
   uint32_t dataIndex = CO_OD_find(CO->SDO[0],odIndex);
 
   if(dataIndex == 0xFFFF) {
@@ -615,7 +629,10 @@ static bool CopyArrayDataFromOD(uint32_t odIndex, void *dataPtr, uint32_t *dataL
 
   // Get the pointer to the data where CAN Open stores the most recent shock accel data 
   // This is subIndex > 1
-  dataPtr = CO_OD_getDataPointer(CO->SDO[0],dataIndex,1);
+  void *temp =  CO_OD_getDataPointer(CO->SDO[0],dataIndex,1);
+  printf("%p",temp);
+  *dataPtr = temp;
+  printf("%p",dataPtr);
 
   // Array element length 
   if(*numElementsStored == 0) {
@@ -627,7 +644,7 @@ static bool CopyArrayDataFromOD(uint32_t odIndex, void *dataPtr, uint32_t *dataL
   return true;
 }
 
-static bool CopyVarFromOD(uint32_t odIndex, void *varPtr, uint32_t *varByteSize) {
+static bool CopyVarFromOD(uint32_t odIndex, void **varPtr, uint32_t *varByteSize) {
   uint32_t dataIndex = CO_OD_find(CO->SDO[0],odIndex);
 
   if(dataIndex == 0xFFFF) {
@@ -635,7 +652,7 @@ static bool CopyVarFromOD(uint32_t odIndex, void *varPtr, uint32_t *varByteSize)
     return false;
   }
 
-  varPtr = CO_OD_getDataPointer(CO->SDO[0],dataIndex,0);
+  *varPtr = CO_OD_getDataPointer(CO->SDO[0],dataIndex,0);
 
   *varByteSize = CO_OD_getLength(CO->SDO[0],dataIndex,1);
 
