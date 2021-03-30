@@ -37,7 +37,7 @@
 #define NUM_SHOCK_PROFILES 1
 
 
-#define NUM_SHOCKS 1
+#define NUM_SHOCKS 2
 
 // CANOpen defines ----------------------------------------------------------------------
 #define CAN_BAUD_RATE 500U

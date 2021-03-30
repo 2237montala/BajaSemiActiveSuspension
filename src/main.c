@@ -137,7 +137,10 @@ int main (void){
 
     //Add one shock controller to the list of monitored notes
     shockControllersNodes[0] = SHOCK_CONTROLLER_ONE_ID;
-    shockControllersNodes[1] = SHOCK_CONTROLLER_TWO_ID;
+
+    #ifdef SHOCK_CONTROLLER_TWO_ID
+      shockControllersNodes[1] = SHOCK_CONTROLLER_TWO_ID;
+    #endif
 
     enableHBForAllNodes(shockControllersNodes,NUM_SHOCKS);
 
@@ -491,9 +494,11 @@ void SetRemoteNodeToOperational(uint8_t nodeId) {
       CO_NMT_sendCommand(CO->NMT,CO_NMT_ENTER_OPERATIONAL,nodeId);
       break;
 
-    case SHOCK_CONTROLLER_TWO_ID:
-      CO_NMT_sendCommand(CO->NMT,CO_NMT_ENTER_OPERATIONAL,nodeId);
-      break;
+    #ifdef SHOCK_CONTROLLER_TWO_ID
+      case SHOCK_CONTROLLER_TWO_ID:
+        CO_NMT_sendCommand(CO->NMT,CO_NMT_ENTER_OPERATIONAL,nodeId);
+        break;
+    #endif
 
     default:
       break;
