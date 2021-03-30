@@ -2,14 +2,18 @@
 #include "config.h"
 #include "arm_math.h"
 #include "stdlib.h"
-#include "fifofast.h"
+
+#define NUMBER_OF_AXIS 3
+#define X_INDEX 0
+#define Y_INDEX 1
+#define Z_INDEX 2
 
 // Sensor Structure
-typedef struct {
-    float32_t accelX;
-    float32_t accelY;
-    float32_t accelZ;
+// This needs to be typedef'd for use in the fifo
+typedef struct ShockSensorData{
+    float32_t accels[NUMBER_OF_AXIS];
     float32_t linearPos;
+    uint8_t inFreefall;
 } ShockSensorDataStruct_t;
 
 typedef struct  {
@@ -17,3 +21,5 @@ typedef struct  {
     float32_t dy;
     float32_t dLinearPos;
 } ShockVelocitiesStruct_t;
+
+

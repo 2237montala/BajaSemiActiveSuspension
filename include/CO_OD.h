@@ -39,7 +39,7 @@
    FILE INFO:
       FileName:     
       FileVersion:  0
-      CreationTime: 11:01PM
+      CreationTime: 12:01AM
       CreationDate: 01-25-2021
       CreatedBy:    Anthony Montalbano
 ******************************************************************************/
@@ -66,11 +66,11 @@
   #define CO_NO_LSS_CLIENT               0   //LSS Master
   #define CO_NO_RPDO                     4   //Associated objects: 14xx, 16xx
   #define CO_NO_TPDO                     1   //Associated objects: 18xx, 1Axx
-  #define CO_NO_NMT_MASTER               1
+  #define CO_NO_NMT_MASTER               0
 
-#define CO_NO_TIME 0
-#define CO_NO_GFC 0
-#define CO_NO_SRDO 0
+        #define CO_NO_TIME 0
+   #define CO_NO_GFC 0
+   #define CO_NO_SRDO 0
 
 /*******************************************************************************
    OBJECT DICTIONARY

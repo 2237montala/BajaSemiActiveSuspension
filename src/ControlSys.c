@@ -104,6 +104,20 @@ void calculateDampingValue(struct ShockControlSystem *shockControlSystemUnit,
     shockControlSystemUnit->previousDamperValues[shockIndex] = fd_real;
 }
 
+void calculateAllDampingValues(struct ShockControlSystem *shockControlSystems, 
+                               ShockVelocitiesStruct_t *velocityData) {
+  for(int i = 0; i < NUM_SHOCKS; i++) {
+    float32_t tempDy, tempDLinearPos;
+    tempDLinearPos = velocityData->dLinearPos;
+    tempDy = velocityData->dy;
+    calculateDampingValue(shockControlSystems, i, tempDLinearPos, 
+                          tempDy, SHOCK_DATA_COLLECTION_RATE_SEC);
+
+    // Take new damper value and convert to valve position
+    // TODO: write this function
+  }
+}
+
 //------------ Helper Function ---------------------------------
 static float clamp(float32_t value, float32_t max, float32_t min) {
     if(value > max) {

@@ -15,6 +15,7 @@
 /* Private variables ---------------------------------------------------------*/
 /* CAN handler declared in "main.c" file */
 extern CAN_HandleTypeDef CanHandle;
+extern TIM_HandleTypeDef msTimer;
 
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
@@ -206,19 +207,6 @@ void CAN2_TX_IRQHandler(void)
   HAL_CAN_IRQHandler(&CanHandle);
 }
 
-/**
-  * @brief  This function handles PPP interrupt request.
-  * @param  None
-  * @retval None
-  */
-/*void PPP_IRQHandler(void)
-{
-}*/
-
-// void TIM6_DAC_IRQHandler() {
-//   micros++;
-
-//   // Clear the interrupt
-//   NVIC_ClearPendingIRQ(TIM6_DAC_IRQn);
-//   TIM6->SR = ~TIM_SR_UIF;
-// }
+void TIM6_DAC_IRQHandler(void) {
+    HAL_TIM_IRQHandler(&msTimer);
+}

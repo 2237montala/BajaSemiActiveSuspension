@@ -4,6 +4,7 @@
 #include "stdbool.h"
 #include "Uart.h"
 #include "targetCommon.h"
+#include "fifofast.h"
 
 #include "ControlSys.h"
 #include "CANopen.h"
@@ -28,9 +29,12 @@ void enableHBCallBacks(uint8_t *nodeIds, uint8_t numNodes);
 void resetAllNodes(uint8_t *nodeIds, uint8_t numNodes);
 void enableHBForAllNodes(uint8_t *nodeIds, uint8_t numNodes);
 
+
+
 // Private functions for control system
 void createInitialDamperProfiles();
-void calculateAllDampingValues(ShockVelocitiesStruct_t *velocityData);
+
+
 
 // CANOpen variable/settings -------------------------------------------------------------
 /* Global variables and objects */
@@ -41,27 +45,19 @@ volatile uint32_t tempTimer = 0;
 // Timer for running CANOpen background tasks
 TIM_HandleTypeDef msTimer = {.Instance = TIM6};
 #define TMR_TASK_INTERVAL   (1000)          /* Interval of tmrTask thread in microseconds */
+#define TMR_TASK_INTERVAL_MS (TMR_TASK_INTERVAL/1000)
 #define INCREMENT_1MS(var)  (var++)         /* Increment 1ms variable in tmrTask */
 
 // CAN Open shock controller variables
 uint8_t shockControllersNodes[NUM_SHOCKS];
 
-// Sensor Data Fifos -------------------------------------------------------------------------
-// These need to be in here as they are referenced using the ID passed into the structure macro
-#define SHOCK_SENSOR_DATA_FIFO_NAME shockSensorDataFifo
-#define SHOCK_VELOCITY_FIFO_NAME shockVelocityFifo
-
-_fff_declare_a(ShockSensorDataStruct_t,SHOCK_SENSOR_DATA_FIFO_NAME,SHOCK_DATA_BUFFER_LEN,NUM_SHOCKS);
-_fff_declare_a(ShockVelocitiesStruct_t,SHOCK_VELOCITY_FIFO_NAME,SHOCK_DATA_BUFFER_LEN,NUM_SHOCKS);
-
-// Initalize the data fifos
-_fff_init_a(SHOCK_SENSOR_DATA_FIFO_NAME,NUM_SHOCKS);
-_fff_init_a(SHOCK_VELOCITY_FIFO_NAME,NUM_SHOCKS);
-
+// Sync counter 
+uint8_t syncCounter = 0;
+uint8_t numSyncPerDataReq = SHOCK_DATA_COLLECTION_RATE/TMR_TASK_INTERVAL_MS;
+bool expectingNewData = false;
 
 // Create a shock control system struct to be used
 struct ShockControlSystem shockControlSystems; 
-
 
 // LED values and pins
 #define GREEN_LED_PIN D8
@@ -165,6 +161,8 @@ int main (void){
         log_printf("Error: CANopen initialization failed: %d\r\n", err);
         return 0;
     }
+
+    CopyShockDataFromOD();
 
     /* Configure Timer interrupt function for execution every 1 millisecond */
 
@@ -297,6 +295,16 @@ void tmrTask_thread(void){
 
       /* Process Sync */
       syncWas = CO_process_SYNC(CO, TMR_TASK_INTERVAL, NULL);
+
+      // Set a flag when we expect new data from the sensors
+      if(syncWas) {
+        syncCounter++;
+        if(syncCounter == numSyncPerDataReq) {
+          expectingNewData = true;
+          syncCounter = 0;
+        }
+      }
+
 
       /* Read inputs */
       CO_process_RPDO(CO, syncWas);
@@ -446,16 +454,12 @@ PUTCHAR_PROTOTYPE
   return len;
 }
 
-void TIM6_DAC_IRQHandler(void) {
-    HAL_TIM_IRQHandler(&msTimer);
-}
+
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
     if(htim->Instance == TIM6) {
         tmrTask_thread();
     }
-    
-    
 }
 
 void resetAllNodes(uint8_t *nodeIds, uint8_t numNodes) {
@@ -485,7 +489,6 @@ void enableHBCallBacks(uint8_t *nodeIds, uint8_t numNodes) {
 
     CO_HBconsumer_initCallbackTimeout(CO->HBcons,i,NULL,ShockControllerHBStopped);
   }
-  
 }
 
 void SetRemoteNodeToOperational(uint8_t nodeId) {
@@ -513,18 +516,7 @@ void SetRemoteNodeToOperational(uint8_t nodeId) {
   // }
 }
 
-void calculateAllDampingValues(ShockVelocitiesStruct_t *velocityData) {
-  for(int i = 0; i < NUM_SHOCKS; i++) {
-    float32_t tempDy, tempDLinearPos;
-    tempDLinearPos = velocityData->dLinearPos;
-    tempDy = velocityData->dy;
-    calculateDampingValue(&shockControlSystems, i, tempDLinearPos, 
-                          tempDy, SHOCK_DATA_COLLECTION_RATE_SEC);
 
-    // Take new damper value and convert to valve position
-    // TODO: write this function
-  }
-}
 
 void ShockControllerBooted(uint8_t nodeId, uint8_t idx, void *object) {
   printf("%lu: Shock controller node %d booted\r\n",HAL_GetTick(),nodeId);
@@ -553,4 +545,3 @@ void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan) {
     printf("CAN REC Error: %lu\r\n", (hcan->Instance->ESR & CAN_ESR_REC_Msk) >> CAN_ESR_REC_Pos);
     printf("CAN error: 0x%lx\r\n", hcan->ErrorCode);
 }
-

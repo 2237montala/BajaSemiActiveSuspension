@@ -62,4 +62,6 @@ void calculateDampingValue(struct ShockControlSystem *shockControlSystemUnit,
 void calculateDampingValues(int numShocks,struct ShockControlSystem *shockUnits, 
                             float32_t *controlSystemOutputs);
 
+void calculateAllDampingValues(struct ShockControlSystem *shockControlSystems, 
+                               ShockVelocitiesStruct_t *velocityData);
 
