@@ -1,6 +1,18 @@
 #include "DataCollection.h"
 #include "stdbool.h"
 
+uint32_t sensorAccelDataOdIndex, sensorStatusOdIndex, sensorRpwOdIndex, sensorIdIndex = 0;
+
+void DataCollectionInit(uint32_t shockSensorAccelOdIndex, uint32_t shockSensorStatusOdIndex,
+                        uint32_t shockSensorRpwOdIndex, uint32_t shockSensorIdOdIndex) {
+    // Find all the OD indices for the arrays
+    sensorAccelDataOdIndex = CO_OD_find(CO->SDO[0],shockSensorAccelOdIndex);
+    sensorStatusOdIndex = CO_OD_find(CO->SDO[0],shockSensorStatusOdIndex);
+    sensorRpwOdIndex = CO_OD_find(CO->SDO[0],shockSensorRpwOdIndex);
+    sensorIdIndex = CO_OD_find(CO->SDO[0],shockSensorIdOdIndex);
+
+
+}
 
 bool PushNewDataOntoFifo(CO_t *CO, uint32_t shockSensorAccelOdIndex, uint32_t shockSensorStatusOdIndex,
                          uint32_t shockSensorRpwOdIndex) {
@@ -27,8 +39,7 @@ bool PushNewDataOntoFifo(CO_t *CO, uint32_t shockSensorAccelOdIndex, uint32_t sh
     return true;
 }
 
-bool CopyShockDataFromOD(CO_t *CO, ShockSensorDataStruct_t *shockDataStruct, uint32_t shockSensorAccelOdIndex,
-                         uint32_t shockSensorStatusOdIndex, uint32_t shockSensorRpwOdIndex) {
+bool CopyShockDataFromOD(CO_t *CO, ShockSensorDataStruct_t *shockDataStruct, ) {
   // Testing to make sure it gets the new values
   // CO_OD_RAM.readShockAccel[0] = 1;
   // CO_OD_RAM.readShockAccel[1] = 2;
