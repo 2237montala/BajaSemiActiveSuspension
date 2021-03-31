@@ -4,12 +4,13 @@
 #include "stdbool.h"
 #include "Uart.h"
 #include "targetCommon.h"
-#include "fifofast.h"
 #include "DataCollection.h"
 
 #include "ControlSys.h"
-#include "CANopen.h"
 
+#ifndef CANopen_H
+  #include "CANopen.h"
+#endif
 
 /* Private function prototypes -----------------------------------------------*/
 
@@ -101,16 +102,6 @@ int main (void){
   defaultProfile.PID_I = PID_I_NORMAL;
   defaultProfile.PID_D = PID_D_NORMAL;
 
-  // Set up the data collection functions
-  DataCollectionInit(CO,OD_6000_readShockAccel,OD_6050_readShockAccelStatus,
-                     OD_6100_readAccelRPY,OD_6060_readShockDataSenderID);
-
-  // Set up the control system
-  ControlSystemInit(&shockControlSystems,NUM_SHOCKS,defaultProfile);
-  //calculateAllDampingValues(&newestData);
-
-  PushNewDataOntoFifo();
-
   // CAN Open Variables
   CO_ReturnError_t err;
   CO_NMT_reset_cmd_t reset = CO_RESET_NOT;
@@ -153,16 +144,23 @@ int main (void){
         log_printf("Error: CAN initialization failed: %d\r\n", err);
         return 0;
     }
-    // err = CO_LSSinit(&pendingNodeId, &pendingBitRate);
-    // if(err != CO_ERROR_NO) {
-    //     log_printf("Error: LSS slave initialization failed: %d\n", err);
-    //     return 0;
-    // }
+
     err = CO_CANopenInit(activeNodeId);
     if(err != CO_ERROR_NO && err != CO_ERROR_NODE_ID_UNCONFIGURED_LSS) {
         log_printf("Error: CANopen initialization failed: %d\r\n", err);
         return 0;
     }
+
+    // Set up the data collection functions
+    DataCollectionInit(CO,OD_6000_readShockAccel,OD_6050_readShockAccelStatus,
+                     OD_6100_readAccelRPY,OD_6060_readShockDataSenderID);
+
+    // Set up the control system
+    ControlSystemInit(&shockControlSystems,NUM_SHOCKS,defaultProfile);
+    //calculateAllDampingValues(&newestData);
+
+    PushNewDataOntoFifo();  
+
     /* Configure Timer interrupt function for execution every 1 millisecond */
 
     HAL_TIM_Base_DeInit(&msTimer);
@@ -307,6 +305,18 @@ void tmrTask_thread(void){
 
       /* Read inputs */
       CO_process_RPDO(CO, syncWas);
+
+      // Check if there was new sensor data added to the OD
+      if(DoesOdContainNewData()) {
+        // Copy the data out of the OD
+        if(PushNewDataOntoFifo() == false) {
+          // Error pushing new data
+          // Throw error????
+          CO_errorReport(CO->em,CO_EM_GENERIC_SOFTWARE_ERROR,CO_EMC_SOFTWARE_INTERNAL,0U);
+
+          // Enter into stop mode?
+        }
+      }
 
       /* Further I/O or nonblocking application code may go here. */
 
@@ -528,7 +538,6 @@ void ShockControllerNMTChange(uint8_t nodeId,uint8_t idx, CO_NMT_internalState_t
   if(state != CO_NMT_INITIALIZING) {
     SetRemoteNodeToOperational(nodeId);
   }
-  
 }
 
 void ShockControllerHBReceived(uint8_t nodeId, uint8_t idx, void *object) {

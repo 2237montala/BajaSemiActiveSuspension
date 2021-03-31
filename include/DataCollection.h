@@ -25,38 +25,48 @@ struct VariableToOdMappingStruct {
   uint32_t dataLengthInBytes;
 };
 
+struct ShockSensorDataOdStruct {
+    ShockSensorDataStruct_t sensorData;
+    uint8_t senderCanId;
+};
+
+/*
+ * PURPOSE
+ *      Initalizes the data collection variables. It links local variables to the Object Directory
+ *      variables so when we need to copy the OD data we already have the pointers
+ * PARAMETERS
+ *      CO* - pointer to the CO object 
+ *      shockSensorAccelOdIndex - The OD index for the shock acceleration data
+ *      shockSensorStatusOdIndex - The OD index for the shock status variable
+ *      shockSensorRpwOdIndex - The OD index for the roll pitch and yaw data
+ *      shockSensorIdOdIndex - The OD index for the sender CAN ID variable
+ * RETURNS
+ *      true if no error, false otherwise
+ */
 bool DataCollectionInit(CO_t *CO, uint32_t shockSensorAccelOdIndex, uint32_t shockSensorStatusOdIndex,
                         uint32_t shockSensorRpwOdIndex, uint32_t shockSensorIdOdIndex);
 
-bool PushNewDataOntoFifo();
+/*
+ * PURPOSE
+ *      Copies data from the OD and pushes it to the sensor data fifo
+ * PARAMETERS
+ *      None
+ * RETURNS
+ *      true if no error, false otherwise
+ */
+bool PushNewDataOntoFifo(void);
 
+/*
+ * PURPOSE
+ *      Copies the data from the OD and stores it into a passed in sensor data struct
+ * PARAMETERS
+ *      *senderCanId - a pointer to a uint8_t variable that will hold the CAN id for who sent the data
+ *      *shockDataStruct - a pointer to a sensorDataStruct where the OD data will be stored
+ * RETURNS
+ *      true if no errors, false otherwise
+ */
 bool CopyShockDataFromOD(uint8_t *senderCanId, ShockSensorDataStruct_t *shockDataStruct);
 
-bool DoesOdContainNewData();
-/*
- * PURPOSE
- *    Get the pointer to the data stored in the Object Directory. CAN Open stores recent
- *    messages in the Object Directory RAM struct. The pointer to the data is known at 
- *    compile time but this function makes it sort of dymanic
- * PARAMETERS
- *    odIndex - The index of the item in the Object Directory
- *    **dataPtr - A pointer to the pointer where the OD data pointer will be stored
- *    *dataLenInBytes - The length of the array in bytes
- * RETURNS
- *    true if no error occur, false otherwise
- */
-//static bool CopyArrayDataFromOD(CO_t *CO, uint32_t odIndex, void **dataPtr, uint32_t *dataLenInBytes);
 
-/*
- * PURPOSE
- *    Get the pointer to the data stored in the Object Directory. CAN Open stores recent
- *    messages in the Object Directory RAM struct. The pointer to the data is known at 
- *    compile time but this function makes it sort of dymanic
- * PARAMETERS
- *    odIndex - the index of the data entry from the Object Directory
- *    **varPtr - a double pointer where the OD data address will be stored
- *    *dataLenInBytes - a pointer to a uint32 that will hold the variable's length in bytes
- * RETURNS
- *  true if no error, false otherwise
- */
-//static bool CopyVarFromOD(CO_t *CO, uint32_t odIndex, void **varPtr, uint32_t *varByteSize);
+
+bool DoesOdContainNewData(void);

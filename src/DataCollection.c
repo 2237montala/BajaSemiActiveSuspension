@@ -10,6 +10,8 @@ struct VariableToOdMappingStruct idMapping;
 
 uint32_t shockControllerOneIndex, shockControllerTwoIndex, shockControllerThreeIndex, shockControllerFourIndex;
 
+// Variable holding the last 
+
 // Private functions ----------------------------------------------------------------------------
 static bool FillOdMapping(CO_SDO_t *SDO, struct VariableToOdMappingStruct *mappingStruct, 
                           uint32_t odIndexToMap);
@@ -65,10 +67,10 @@ bool DataCollectionInit(CO_t *CO, uint32_t shockSensorAccelOdIndex, uint32_t sho
     return true;
 }
 
-bool PushNewDataOntoFifo() {
+bool PushNewDataOntoFifo(void) {
+    ShockSensorDataStruct_t tempData;
+    uint8_t senderCanId;
 
-    static ShockSensorDataStruct_t tempData;
-    static uint8_t senderCanId;
     // Get the newest data from the OD
     bool status = CopyShockDataFromOD(&senderCanId,&tempData);
     if(!status) {
@@ -184,6 +186,24 @@ static int GetFifoIndexFromId(uint8_t id) {
         default:
             return -1;
     }
+}
+
+bool DoesOdContainNewData(void) {
+    // Compare data in the OD with the data at the head of sender's fifo
+    // Get the OD data
+    ShockSensorDataStruct_t odSensorData;
+    ShockSensorDataStruct_t fifoSensorData;
+    uint8_t odSenderId;
+    uint8_t fifoSenderId;
+
+    // Get the newest data from the OD
+    bool status = CopyShockDataFromOD(&odSenderId,&odSensorData);
+    if(!status) {
+        // Error copying data
+        return false;
+    }
+
+
 }
 
 // static bool CopyArrayDataFromOD(CO_SDO_t *SDO, uint32_t odIndex, void **dataPtr, uint32_t *dataLenInBytes) {
