@@ -25,9 +25,6 @@
 #define CONTROL_SPRING_K 40000.0f
 #define CONTROL_SYSTEM_MASS_QUARTER_CAR 80.0f
 
-// #define CONTROL_SYSTEM_C_MIN 1342.0f
-// #define CONTROL_SYSTEM_C_MAX 7155.0f
-
 // PID parameters
 #define PID_P_NORMAL 0.7f
 #define PID_I_NORMAL 5.0f

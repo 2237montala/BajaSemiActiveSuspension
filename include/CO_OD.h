@@ -68,14 +68,13 @@
   #define CO_NO_TPDO                     1   //Associated objects: 18xx, 1Axx
   #define CO_NO_NMT_MASTER               0
 
-        #define CO_NO_TIME 0
+#define CO_NO_TIME 0
    #define CO_NO_GFC 0
    #define CO_NO_SRDO 0
-
 /*******************************************************************************
    OBJECT DICTIONARY
 *******************************************************************************/
-   #define CO_OD_NoOfElements             39
+   #define CO_OD_NoOfElements             40
 
 
 /*******************************************************************************
@@ -380,6 +379,9 @@
 /*6050 */
         #define OD_6050_readShockAccelStatus                        0x6050
 
+/*6060 */
+        #define OD_6060_readShockDataSenderID                       0x6060
+
 /*6100 */
         #define OD_6100_readAccelRPY                                0x6100
 
@@ -437,6 +439,7 @@ struct sCO_OD_RAM{
 /*2102      */ UNSIGNED16      CANBitRate;
 /*6000      */ REAL32          readShockAccel[3];
 /*6050      */ UNSIGNED8       readShockAccelStatus;
+/*6060      */ UNSIGNED8       readShockDataSenderID;
 /*6100      */ REAL32          readAccelRPY[3];
 
                UNSIGNED32     LastWord;
@@ -578,6 +581,9 @@ extern struct sCO_OD_EEPROM CO_OD_EEPROM;
 
 /*6050, Data Type: UNSIGNED8 */
         #define OD_readShockAccelStatus                             CO_OD_RAM.readShockAccelStatus
+
+/*6060, Data Type: UNSIGNED8 */
+        #define OD_readShockDataSenderID                            CO_OD_RAM.readShockDataSenderID
 
 /*6100, Data Type: REAL32, Array[3] */
         #define OD_readAccelRPY                                     CO_OD_RAM.readAccelRPY

@@ -5,15 +5,11 @@
 #include "Uart.h"
 #include "targetCommon.h"
 #include "fifofast.h"
+#include "DataCollection.h"
 
 #include "ControlSys.h"
 #include "CANopen.h"
 
-
-// Include arm math libraies
-#ifndef _ARM_MATH_H
-    #include "arm_math.h"
-#endif
 
 /* Private function prototypes -----------------------------------------------*/
 
@@ -105,9 +101,15 @@ int main (void){
   defaultProfile.PID_I = PID_I_NORMAL;
   defaultProfile.PID_D = PID_D_NORMAL;
 
+  // Set up the data collection functions
+  DataCollectionInit(CO,OD_6000_readShockAccel,OD_6050_readShockAccelStatus,
+                     OD_6100_readAccelRPY,OD_6060_readShockDataSenderID);
+
   // Set up the control system
   ControlSystemInit(&shockControlSystems,NUM_SHOCKS,defaultProfile);
   //calculateAllDampingValues(&newestData);
+
+  PushNewDataOntoFifo();
 
   // CAN Open Variables
   CO_ReturnError_t err;
@@ -161,9 +163,6 @@ int main (void){
         log_printf("Error: CANopen initialization failed: %d\r\n", err);
         return 0;
     }
-
-    CopyShockDataFromOD();
-
     /* Configure Timer interrupt function for execution every 1 millisecond */
 
     HAL_TIM_Base_DeInit(&msTimer);

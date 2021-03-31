@@ -8,6 +8,9 @@ struct VariableToOdMappingStruct rpyDataMapping;
 struct VariableToOdMappingStruct statusMapping;
 struct VariableToOdMappingStruct idMapping;
 
+static bool FillOdMapping(CO_SDO_t *SDO, struct VariableToOdMappingStruct *mappingStruct, 
+                          uint32_t odIndexToMap);
+
 bool DataCollectionInit(CO_t *CO, uint32_t shockSensorAccelOdIndex, uint32_t shockSensorStatusOdIndex,
                         uint32_t shockSensorRpwOdIndex, uint32_t shockSensorIdOdIndex) {
 
@@ -46,6 +49,7 @@ bool PushNewDataOntoFifo() {
         return false;
     }
 
+    // TODO: Change adding to fifo based on who sent the data
     // Push data onto the fifo
     // If fifo is full then pop off an element
     if(_fff_is_full(SHOCK_SENSOR_DATA_FIFO_NAME[0])) {
@@ -60,11 +64,14 @@ bool PushNewDataOntoFifo() {
 
 bool CopyShockDataFromOD(uint8_t *senderCanId, ShockSensorDataStruct_t *shockDataStruct) {
   // Testing to make sure it gets the new values
-  // CO_OD_RAM.readShockAccel[0] = 1;
-  // CO_OD_RAM.readShockAccel[1] = 2;
-  // CO_OD_RAM.readShockAccel[2] = 3;
+  CO_OD_RAM.readShockAccel[0] = 1;
+  CO_OD_RAM.readShockAccel[1] = 2;
+  CO_OD_RAM.readShockAccel[2] = 3;
 
-  // CO_OD_RAM.readShockAccelStatus = 0x1;
+  CO_OD_RAM.readShockAccelStatus = 0x1;
+
+  CO_OD_RAM.readShockDataSenderID = 0x21;
+
   if(idMapping.odDataPtr == NULL) {
     return false;
   }

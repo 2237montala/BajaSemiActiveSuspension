@@ -9,10 +9,8 @@
 
 // Sensor Data Fifos -------------------------------------------------------------------------
 // These need to be in here as they are referenced using the ID passed into the structure macro
-struct ShockDataFifos {
-  _fff_declare_a(ShockSensorDataStruct_t,SHOCK_SENSOR_DATA_FIFO_NAME,SHOCK_DATA_BUFFER_LEN,NUM_SHOCKS);
-  _fff_declare_a(ShockVelocitiesStruct_t,SHOCK_VELOCITY_FIFO_NAME,SHOCK_DATA_BUFFER_LEN,NUM_SHOCKS);
-};
+_fff_declare_a(ShockSensorDataStruct_t,SHOCK_SENSOR_DATA_FIFO_NAME,SHOCK_DATA_BUFFER_LEN,NUM_SHOCKS);
+_fff_declare_a(ShockVelocitiesStruct_t,SHOCK_VELOCITY_FIFO_NAME,SHOCK_DATA_BUFFER_LEN,NUM_SHOCKS);
 
 // Initalize the data fifos
 _fff_init_a(SHOCK_SENSOR_DATA_FIFO_NAME,NUM_SHOCKS);
@@ -27,6 +25,8 @@ struct VariableToOdMappingStruct {
 
 bool DataCollectionInit(CO_t *CO, uint32_t shockSensorAccelOdIndex, uint32_t shockSensorStatusOdIndex,
                         uint32_t shockSensorRpwOdIndex, uint32_t shockSensorIdOdIndex);
+
+bool PushNewDataOntoFifo();
 
 bool CopyShockDataFromOD(uint8_t *senderCanId, ShockSensorDataStruct_t *shockDataStruct);
 
@@ -57,5 +57,3 @@ bool CopyShockDataFromOD(uint8_t *senderCanId, ShockSensorDataStruct_t *shockDat
  *  true if no error, false otherwise
  */
 //static bool CopyVarFromOD(CO_t *CO, uint32_t odIndex, void **varPtr, uint32_t *varByteSize);
-
-static bool FillOdMapping(CO_SDO_t *SDO, struct VariableToOdMappingStruct *mappingStruct, uint32_t odIndexToMap);
