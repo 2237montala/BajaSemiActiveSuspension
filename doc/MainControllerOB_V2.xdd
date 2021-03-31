@@ -911,7 +911,7 @@ mapped object  (subindex 1...8)
             <denotation>
               <label lang="en" />
             </denotation>
-            <defaultValue value="0x60500008" />
+            <defaultValue value="0x60600008" />
           </parameter>
           <parameter uniqueID="UID_PARAM_160104" access="read">
             <label lang="en">mapped object 4</label>
@@ -1463,6 +1463,14 @@ Bit 1 - 7: Not Defined</description>
             </denotation>
             <defaultValue value="0x0" />
           </parameter>
+          <parameter uniqueID="UID_PARAM_6060" access="readWrite">
+            <label lang="en">Read Shock Data Sender ID</label>
+            <description lang="en" />
+            <denotation>
+              <label lang="en" />
+            </denotation>
+            <defaultValue value="" />
+          </parameter>
           <parameter uniqueID="UID_PARAM_6100" access="readWrite">
             <label lang="en">Read Accel RPY</label>
             <description lang="en" />
@@ -1676,7 +1684,7 @@ Bit 1 - 7: Not Defined</description>
           </CANopenObject>
           <CANopenObject index="1F80" name="NMT startup" objectType="7" dataType="0007" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="no" uniqueIDRef="UID_PARAM_1f80" />
           <CANopenObject index="2100" name="Error status bits" objectType="7" dataType="000A" lowLimit="" highLimit="" accessType="ro" actualValue="" edseditor_extenstion_storagelocation="RAM" PDOmapping="optional" uniqueIDRef="UID_PARAM_2100" />
-          <CANopenObject index="2101" name="CAN node ID" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" edseditor_extenstion_storagelocation="ROM" PDOmapping="optional" uniqueIDRef="UID_PARAM_2101" />
+          <CANopenObject index="2101" name="CAN node ID" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="ROM" PDOmapping="optional" uniqueIDRef="UID_PARAM_2101" />
           <CANopenObject index="2102" name="CAN bit rate" objectType="7" dataType="0006" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="RAM" PDOmapping="no" uniqueIDRef="UID_PARAM_2102" />
           <CANopenObject index="6000" name="Read Shock Accel" objectType="8" dataType="0008" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="RAM" PDOmapping="optional" uniqueIDRef="UID_PARAM_6000" subNumber="4">
             <CANopenSubObject subIndex="0000" name="max sub-index" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="optional" uniqueIDRef="UID_PARAM_600000" />
@@ -1685,6 +1693,7 @@ Bit 1 - 7: Not Defined</description>
             <CANopenSubObject subIndex="0003" name="Z Accel" objectType="7" dataType="0008" lowLimit="" highLimit="" accessType="rw" actualValue="" PDOmapping="optional" uniqueIDRef="UID_PARAM_600003" />
           </CANopenObject>
           <CANopenObject index="6050" name="Read Shock Accel Status" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="RAM" PDOmapping="optional" uniqueIDRef="UID_PARAM_6050" />
+          <CANopenObject index="6060" name="Read Shock Data Sender ID" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="rw" actualValue="" denotation="" edseditor_extenstion_storagelocation="RAM" PDOmapping="optional" uniqueIDRef="UID_PARAM_6060" />
           <CANopenObject index="6100" name="Read Accel RPY" objectType="8" dataType="0008" lowLimit="" highLimit="" accessType="rw" actualValue="" edseditor_extenstion_storagelocation="RAM" PDOmapping="optional" uniqueIDRef="UID_PARAM_6100" subNumber="4">
             <CANopenSubObject subIndex="0000" name="max sub-index" objectType="7" dataType="0005" lowLimit="" highLimit="" accessType="ro" actualValue="" PDOmapping="optional" uniqueIDRef="UID_PARAM_610000" />
             <CANopenSubObject subIndex="0001" name="Roll" objectType="7" dataType="0008" lowLimit="" highLimit="" accessType="rw" actualValue="" PDOmapping="optional" uniqueIDRef="UID_PARAM_610001" />
