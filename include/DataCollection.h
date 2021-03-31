@@ -1,8 +1,12 @@
 #pragma once
+
 #include "config.h"
 #include "ShockData.h"
 #include "fifofast.h"
-#include "CANopen.h"
+
+#ifndef CANopen_H
+    #include "CANopen.h"
+#endif
 
 #define SHOCK_SENSOR_DATA_FIFO_NAME shockSensorDataFifo
 #define SHOCK_VELOCITY_FIFO_NAME shockVelocityFifo
@@ -12,9 +16,7 @@
 _fff_declare_a(ShockSensorDataStruct_t,SHOCK_SENSOR_DATA_FIFO_NAME,SHOCK_DATA_BUFFER_LEN,NUM_SHOCKS);
 _fff_declare_a(ShockVelocitiesStruct_t,SHOCK_VELOCITY_FIFO_NAME,SHOCK_DATA_BUFFER_LEN,NUM_SHOCKS);
 
-// Initalize the data fifos
-_fff_init_a(SHOCK_SENSOR_DATA_FIFO_NAME,NUM_SHOCKS);
-_fff_init_a(SHOCK_VELOCITY_FIFO_NAME,NUM_SHOCKS);
+
 
 // Struct to hold pointer and data length for variables inside the OD
 struct VariableToOdMappingStruct {
@@ -30,6 +32,7 @@ bool PushNewDataOntoFifo();
 
 bool CopyShockDataFromOD(uint8_t *senderCanId, ShockSensorDataStruct_t *shockDataStruct);
 
+bool DoesOdContainNewData();
 /*
  * PURPOSE
  *    Get the pointer to the data stored in the Object Directory. CAN Open stores recent

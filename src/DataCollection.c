@@ -8,11 +8,38 @@ struct VariableToOdMappingStruct rpyDataMapping;
 struct VariableToOdMappingStruct statusMapping;
 struct VariableToOdMappingStruct idMapping;
 
+uint32_t shockControllerOneIndex, shockControllerTwoIndex, shockControllerThreeIndex, shockControllerFourIndex;
+
+// Private functions ----------------------------------------------------------------------------
 static bool FillOdMapping(CO_SDO_t *SDO, struct VariableToOdMappingStruct *mappingStruct, 
                           uint32_t odIndexToMap);
+static int GetFifoIndexFromId(uint8_t id);
+
+// Start of functions ---------------------------------------------------------------------------
 
 bool DataCollectionInit(CO_t *CO, uint32_t shockSensorAccelOdIndex, uint32_t shockSensorStatusOdIndex,
                         uint32_t shockSensorRpwOdIndex, uint32_t shockSensorIdOdIndex) {
+
+    // Initalize the data fifos
+    _fff_init_a(SHOCK_SENSOR_DATA_FIFO_NAME,NUM_SHOCKS);
+    _fff_init_a(SHOCK_VELOCITY_FIFO_NAME,NUM_SHOCKS);
+
+    // Create index map based on which
+    for(int i = 0; i < NUM_SHOCKS; i++) {
+        if(SHOCK_CONTROLLER_ONE_ID != 0) {
+            shockControllerOneIndex = i;
+            // Shock controller one is here
+        } else if(SHOCK_CONTROLLER_TWO_ID != 0) {
+            shockControllerTwoIndex = i;
+            // Shock controller two is here
+        } else if(SHOCK_CONTROLLER_THREE_ID != 0) {
+            shockControllerThreeIndex = i;
+            // Shock controller three is here
+        } else if(SHOCK_CONTROLLER_FOUR_ID != 0) {
+            shockControllerFourIndex = i;
+            // Shock controller four is here
+        }
+    }
 
     // Get the index and data pointers for the requested data
     bool noError = true;
@@ -50,16 +77,24 @@ bool PushNewDataOntoFifo() {
     }
 
     // TODO: Change adding to fifo based on who sent the data
-    // Push data onto the fifo
-    // If fifo is full then pop off an element
-    if(_fff_is_full(SHOCK_SENSOR_DATA_FIFO_NAME[0])) {
-        _fff_remove(SHOCK_SENSOR_DATA_FIFO_NAME[0],1);
+    int fifoIndex = GetFifoIndexFromId(sensorIdIndex);
+
+    if(fifoIndex >= 0) {
+        // Push data onto the fifo
+        // If fifo is full then pop off an element
+        if(_fff_is_full(SHOCK_SENSOR_DATA_FIFO_NAME[fifoIndex])) {
+            _fff_remove(SHOCK_SENSOR_DATA_FIFO_NAME[fifoIndex],1);
+        }
+
+        // Add new sample to the fifo
+        _fff_write_lite(SHOCK_SENSOR_DATA_FIFO_NAME[fifoIndex],tempData);
+
+        return true;
+    } else {
+        // Index couldn't be found
+        // The sender ID wasn't known
+        return false;
     }
-
-    // Add new sample to the fifo
-    _fff_write_lite(SHOCK_SENSOR_DATA_FIFO_NAME[0],tempData);
-
-    return true;
 }
 
 bool CopyShockDataFromOD(uint8_t *senderCanId, ShockSensorDataStruct_t *shockDataStruct) {
@@ -79,8 +114,6 @@ bool CopyShockDataFromOD(uint8_t *senderCanId, ShockSensorDataStruct_t *shockDat
   uint8_t *tempId = (uint8_t *)idMapping.odDataPtr; 
 
   *senderCanId = *tempId;
-  //memcpy(senderCanId,idMapping.odDataPtr,sizeof(uint8_t));
-
 
   if(accelDataMapping.odDataPtr == NULL) {
     // Something went wrong with getting the data pointer, shouldn't be null
@@ -138,6 +171,20 @@ static bool FillOdMapping(CO_SDO_t *SDO, struct VariableToOdMappingStruct *mappi
   return true;
 }
 
+static int GetFifoIndexFromId(uint8_t id) {
+    switch(id) {
+        case SHOCK_CONTROLLER_ONE_ID:
+            return shockControllerOneIndex;
+        case SHOCK_CONTROLLER_TWO_ID:
+            return shockControllerTwoIndex;
+        case SHOCK_CONTROLLER_THREE_ID:
+            return shockControllerThreeIndex;
+        case SHOCK_CONTROLLER_FOUR_ID:
+            return shockControllerFourIndex;
+        default:
+            return -1;
+    }
+}
 
 // static bool CopyArrayDataFromOD(CO_SDO_t *SDO, uint32_t odIndex, void **dataPtr, uint32_t *dataLenInBytes) {
 //   uint32_t dataIndex = CO_OD_find(SDO,odIndex);
