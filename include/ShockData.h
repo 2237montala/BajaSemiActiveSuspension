@@ -16,10 +16,23 @@ typedef struct ShockSensorData{
     uint8_t inFreefall;
 } ShockSensorDataStruct_t;
 
+typedef struct IncomingShockSensorData {
+    float32_t accels[NUMBER_OF_AXIS];
+    float32_t linearPos;
+    uint8_t inFreefall;
+} IncomingShockSensorData_t;
+
 typedef struct  {
     float32_t dx;
     float32_t dy;
     float32_t dLinearPos;
 } ShockVelocitiesStruct_t;
+
+typedef struct {
+    float32_t dx;
+    float32_t dy;
+    float32_t dLinearPos;
+    IncomingShockSensorData_t rawData;
+} ControlSystemShockData_t;
 
 
