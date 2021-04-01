@@ -51,3 +51,12 @@
 
 #define SHOCK_CONTROLLER_HEARTBEAT_INTERVAL 1000U
 #define SHOCK_CONTROLLER_HEARTBEAT_INTERVAL_OFFSET 200U
+
+// Velocity integration paramters ---------------------------------
+// How long the fifo is for the income shock data 
+// This value should be a power of 2
+// INCOMING_SHOCK_DATA_FIFO_LEN * SHOCK_DATA_COLLECTION_RATE will be a length of time of valid data
+#define INCOMING_SHOCK_DATA_FIFO_LEN 16
+
+// How many previous acceleration values will be used to calcuate the new velocity in the same axis
+#define NUM_PREVIOUS_ACCELS_PER_INTEGRATION 1

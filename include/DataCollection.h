@@ -8,14 +8,13 @@
     #include "CANopen.h"
 #endif
 
-#define SHOCK_SENSOR_DATA_FIFO_NAME shockSensorDataFifo
-#define SHOCK_VELOCITY_FIFO_NAME shockVelocityFifo
 
-// Sensor Data Fifos -------------------------------------------------------------------------
-// These need to be in here as they are referenced using the ID passed into the structure macro
-_fff_declare_a(ShockSensorDataStruct_t,SHOCK_SENSOR_DATA_FIFO_NAME,SHOCK_DATA_BUFFER_LEN,NUM_SHOCKS);
-_fff_declare_a(ShockVelocitiesStruct_t,SHOCK_VELOCITY_FIFO_NAME,SHOCK_DATA_BUFFER_LEN,NUM_SHOCKS);
+#define IMCOMING_SHOCK_SENSOR_DATA_FIFO_NAME incomingShockDataFifo
 
+// This fifo will hold incoming shock data to be used for the control system and calculating 
+// velocities from accelerations. This fifo will be used as a queue
+_fff_declare_a(IncomingShockSensorData_t,IMCOMING_SHOCK_SENSOR_DATA_FIFO_NAME,
+               INCOMING_SHOCK_DATA_FIFO_LEN,NUM_SHOCKS);
 
 
 // Struct to hold pointer and data length for variables inside the OD
@@ -26,7 +25,7 @@ struct VariableToOdMappingStruct {
 };
 
 struct ShockSensorDataOdStruct {
-    ShockSensorDataStruct_t sensorData;
+    IncomingShockSensorData_t sensorData;
     uint8_t senderCanId;
 };
 
