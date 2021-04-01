@@ -10,7 +10,8 @@ struct VariableToOdMappingStruct idMapping;
 
 uint32_t shockControllerOneIndex, shockControllerTwoIndex, shockControllerThreeIndex, shockControllerFourIndex;
 
-// Variable holding the last 
+// Variable holding the last read data from the OD 
+struct ShockSensorDataOdStruct lastOdSensorData;
 
 // Private functions ----------------------------------------------------------------------------
 static bool FillOdMapping(CO_SDO_t *SDO, struct VariableToOdMappingStruct *mappingStruct, 
@@ -19,8 +20,12 @@ static int GetFifoIndexFromId(uint8_t id);
 
 // Start of functions ---------------------------------------------------------------------------
 
-bool DataCollectionInit(CO_t *CO, uint32_t shockSensorAccelOdIndex, uint32_t shockSensorStatusOdIndex,
-                        uint32_t shockSensorRpwOdIndex, uint32_t shockSensorIdOdIndex) {
+bool DataCollectionInit(CO_t *CO, uint32_t shockSensorAccelOdIndex,
+                        uint32_t shockSensorStatusOdIndex, uint32_t shockSensorRpwOdIndex,
+                        uint32_t shockSensorIdOdIndex) {
+
+    // Initialize some variables
+    memset(&lastOdSensorData,0x0,sizeof(lastOdSensorData));
 
     // Initalize the data fifos
     _fff_init_a(SHOCK_SENSOR_DATA_FIFO_NAME,NUM_SHOCKS);
@@ -68,18 +73,15 @@ bool DataCollectionInit(CO_t *CO, uint32_t shockSensorAccelOdIndex, uint32_t sho
 }
 
 bool PushNewDataOntoFifo(void) {
-    ShockSensorDataStruct_t tempData;
-    uint8_t senderCanId;
-
     // Get the newest data from the OD
-    bool status = CopyShockDataFromOD(&senderCanId,&tempData);
+    bool status = CopyShockDataFromOD(&lastOdSensorData);
     if(!status) {
         // Error copying data
         return false;
     }
 
     // TODO: Change adding to fifo based on who sent the data
-    int fifoIndex = GetFifoIndexFromId(sensorIdIndex);
+    int fifoIndex = GetFifoIndexFromId(lastOdSensorData.senderCanId);
 
     if(fifoIndex >= 0) {
         // Push data onto the fifo
@@ -89,7 +91,7 @@ bool PushNewDataOntoFifo(void) {
         }
 
         // Add new sample to the fifo
-        _fff_write_lite(SHOCK_SENSOR_DATA_FIFO_NAME[fifoIndex],tempData);
+        _fff_write_lite(SHOCK_SENSOR_DATA_FIFO_NAME[fifoIndex],lastOdSensorData.sensorData);
 
         return true;
     } else {
@@ -99,7 +101,7 @@ bool PushNewDataOntoFifo(void) {
     }
 }
 
-bool CopyShockDataFromOD(uint8_t *senderCanId, ShockSensorDataStruct_t *shockDataStruct) {
+bool CopyShockDataFromOD(struct ShockSensorDataOdStruct *shockOdData) {
   // Testing to make sure it gets the new values
   CO_OD_RAM.readShockAccel[0] = 1;
   CO_OD_RAM.readShockAccel[1] = 2;
@@ -115,7 +117,7 @@ bool CopyShockDataFromOD(uint8_t *senderCanId, ShockSensorDataStruct_t *shockDat
 
   uint8_t *tempId = (uint8_t *)idMapping.odDataPtr; 
 
-  *senderCanId = *tempId;
+  shockOdData->senderCanId = *tempId;
 
   if(accelDataMapping.odDataPtr == NULL) {
     // Something went wrong with getting the data pointer, shouldn't be null
@@ -124,7 +126,8 @@ bool CopyShockDataFromOD(uint8_t *senderCanId, ShockSensorDataStruct_t *shockDat
 
   // Copy OD accel data to the local struct
   // OD_getLength returns the length of 
-  memcpy(shockDataStruct->accels,accelDataMapping.odDataPtr,accelDataMapping.dataLengthInBytes);
+  memcpy(shockOdData->sensorData.accels,accelDataMapping.odDataPtr,
+         accelDataMapping.dataLengthInBytes);
 
 
   if(statusMapping.odDataPtr == NULL) {
@@ -132,7 +135,8 @@ bool CopyShockDataFromOD(uint8_t *senderCanId, ShockSensorDataStruct_t *shockDat
   }
 
   // Copy the data over to the array
-  memcpy(&(shockDataStruct->inFreefall),statusMapping.odDataPtr,statusMapping.dataLengthInBytes);
+  memcpy(&(shockOdData->sensorData.inFreefall),statusMapping.odDataPtr,
+         statusMapping.dataLengthInBytes);
 
 
   // TODO: Add roll pitch and yaw
@@ -191,19 +195,27 @@ static int GetFifoIndexFromId(uint8_t id) {
 bool DoesOdContainNewData(void) {
     // Compare data in the OD with the data at the head of sender's fifo
     // Get the OD data
-    ShockSensorDataStruct_t odSensorData;
-    ShockSensorDataStruct_t fifoSensorData;
-    uint8_t odSenderId;
-    uint8_t fifoSenderId;
+    struct ShockSensorDataOdStruct currOdData;
 
     // Get the newest data from the OD
-    bool status = CopyShockDataFromOD(&odSenderId,&odSensorData);
+    bool status = CopyShockDataFromOD(&currOdData);
     if(!status) {
         // Error copying data
         return false;
     }
 
+    // Compare the current OD data with the last copy of the OD values
+    // The copy is only updated when different sensor data is saved
 
+    if(currOdData.senderCanId == lastOdSensorData.senderCanId) {
+        // Senders are the same so check the data structs
+        // If they are equal, memcmp returns 0, then they are the same data so return false
+        return memcmp(&(currOdData.sensorData),&(lastOdSensorData.sensorData),
+                      sizeof(currOdData.sensorData)) != 0;
+    } else {
+        // Data in OD is from a different sender so it's new
+        return true;
+    }
 }
 
 // static bool CopyArrayDataFromOD(CO_SDO_t *SDO, uint32_t odIndex, void **dataPtr, uint32_t *dataLenInBytes) {

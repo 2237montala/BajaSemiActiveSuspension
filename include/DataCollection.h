@@ -60,13 +60,22 @@ bool PushNewDataOntoFifo(void);
  * PURPOSE
  *      Copies the data from the OD and stores it into a passed in sensor data struct
  * PARAMETERS
- *      *senderCanId - a pointer to a uint8_t variable that will hold the CAN id for who sent the data
- *      *shockDataStruct - a pointer to a sensorDataStruct where the OD data will be stored
+ *      *shockOdData - a pointer to a shockSensorDataOdStruct that will hold the data copied
+ *                     from the OD
  * RETURNS
  *      true if no errors, false otherwise
  */
-bool CopyShockDataFromOD(uint8_t *senderCanId, ShockSensorDataStruct_t *shockDataStruct);
+bool CopyShockDataFromOD(struct ShockSensorDataOdStruct *shockOdData);
 
 
-
+/*
+ * PURPOSE
+ *      Determines if there is new data contained in the OD compared to the last known data added
+ *      to the fifo. Since there is only one location for sensor data we need to constantly check
+ *      if the data is new so we can copy it out
+ * PARAMETERS
+ *      None
+ * RETURNS
+ *      True is data in OD is new, false if it is old data
+ */
 bool DoesOdContainNewData(void);
