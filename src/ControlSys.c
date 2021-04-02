@@ -105,11 +105,11 @@ void calculateDampingValue(struct ShockControlSystem *shockControlSystemUnit,
 }
 
 void calculateAllDampingValues(struct ShockControlSystem *shockControlSystems, 
-                               ShockVelocitiesStruct_t *velocityData) {
+                               ControlSystemShockData_t *controlSystemData) {
   for(int i = 0; i < NUM_SHOCKS; i++) {
     float32_t tempDy, tempDLinearPos;
-    tempDLinearPos = velocityData->dLinearPos;
-    tempDy = velocityData->dy;
+    tempDLinearPos = controlSystemData->dLinearPos;
+    tempDy = controlSystemData->dy;
     calculateDampingValue(shockControlSystems, i, tempDLinearPos, 
                           tempDy, SHOCK_DATA_COLLECTION_RATE_SEC);
 
