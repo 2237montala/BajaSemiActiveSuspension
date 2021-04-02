@@ -51,9 +51,10 @@ bool DataCollectionInit(CO_t *CO, uint32_t shockSensorAccelOdIndex, uint32_t sho
  * PARAMETERS
  *      None
  * RETURNS
- *      true if no error, false otherwise
+ *      fifoIndex - If there is a fifo for that sender and it copied data correctly the 
+ *                  function returns the fifo index. Otherwise a -1 for error
  */
-bool PushNewDataOntoFifo(void);
+int PushNewDataOntoFifo(void);
 
 /*
  * PURPOSE

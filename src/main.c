@@ -26,8 +26,6 @@ void enableHBCallBacks(uint8_t *nodeIds, uint8_t numNodes);
 void resetAllNodes(uint8_t *nodeIds, uint8_t numNodes);
 void enableHBForAllNodes(uint8_t *nodeIds, uint8_t numNodes);
 
-
-
 // Private functions for control system
 void createInitialDamperProfiles();
 
@@ -45,8 +43,13 @@ TIM_HandleTypeDef msTimer = {.Instance = TIM6};
 #define TMR_TASK_INTERVAL_MS (TMR_TASK_INTERVAL/1000)
 #define INCREMENT_1MS(var)  (var++)         /* Increment 1ms variable in tmrTask */
 
-// CAN Open shock controller variables
-uint8_t shockControllersNodes[NUM_SHOCKS];
+struct ShockControllerNodeStatus {
+  uint8_t canOpenId;
+  bool hasNewData;
+};
+
+struct ShockControllerNodeStatus shockControllerNodes[NUM_SHOCKS];
+
 
 // Sync counter 
 uint8_t syncCounter = 0;
@@ -96,6 +99,26 @@ int main (void){
   /* Configure microcontroller. */
   setup();
 
+  // Initialize global variables
+  // Configure the controller node array based on which nodes are active
+  for(int i = 0; i < NUM_SHOCKS; i++) {
+      if(SHOCK_CONTROLLER_ONE_ID != 0) {
+          shockControllerNodes[i].canOpenId = SHOCK_CONTROLLER_ONE_ID;
+          // Shock controller one is here
+      } else if(SHOCK_CONTROLLER_TWO_ID != 0) {
+          shockControllerNodes[i].canOpenId = SHOCK_CONTROLLER_TWO_ID;
+          // Shock controller two is here
+      } else if(SHOCK_CONTROLLER_THREE_ID != 0) {
+          shockControllerNodes[i].canOpenId = SHOCK_CONTROLLER_THREE_ID;
+          // Shock controller three is here
+      } else if(SHOCK_CONTROLLER_FOUR_ID != 0) {
+          shockControllerNodes[i].canOpenId = SHOCK_CONTROLLER_FOUR_ID;
+          // Shock controller four is here
+      }
+      shockControllerNodes[i].hasNewData = false;
+  }
+
+
   // Create temporary shockDamperProfile
   struct ShockDamperProfile defaultProfile = { 0 };
   defaultProfile.PID_P = PID_P_NORMAL;
@@ -124,14 +147,8 @@ int main (void){
     /* CANopen communication reset - initialize CANopen objects *******************/
     uint16_t timer1msPrevious;
 
-    //Add one shock controller to the list of monitored notes
-    shockControllersNodes[0] = SHOCK_CONTROLLER_ONE_ID;
-
-    #ifdef SHOCK_CONTROLLER_TWO_ID
-      shockControllersNodes[1] = SHOCK_CONTROLLER_TWO_ID;
-    #endif
-
-    enableHBForAllNodes(shockControllersNodes,NUM_SHOCKS);
+    // TODO: FIX
+    //enableHBForAllNodes(shockControllersNodes,NUM_SHOCKS);
 
     log_printf("CANopenNode - Reset communication...\r\n");
 
@@ -159,7 +176,6 @@ int main (void){
     ControlSystemInit(&shockControlSystems,NUM_SHOCKS,defaultProfile);
     //calculateAllDampingValues(&newestData);
 
-    PushNewDataOntoFifo();  
 
     /* Configure Timer interrupt function for execution every 1 millisecond */
 
@@ -195,8 +211,9 @@ int main (void){
     // Enable interrupts for timer
     HAL_TIM_Base_Start_IT(&msTimer);
 
+    // TODO: FIX
     // Set up callbacks for certain functions
-    enableHBCallBacks(shockControllersNodes,NUM_SHOCKS);
+    //enableHBCallBacks(shockControllersNodes,NUM_SHOCKS);
 
     /* start CAN */
     CO_CANsetNormalMode(CO->CANmodule[0]);
@@ -210,12 +227,8 @@ int main (void){
     // Run startup sequence
     bool startUpComplete = false;
     uint16_t timer1msCopy, timer1msDiff;
-    uint32_t nmtCommandDelay = 5000;
-    uint32_t lastNMTCommandTime = HAL_GetTick();
     bool onBoot = true;
     while(reset == CO_RESET_NOT && !startUpComplete){
-        
-
         timer1msCopy = CO_timer1ms;
         timer1msDiff = timer1msCopy - timer1msPrevious;
         timer1msPrevious = timer1msCopy;
@@ -233,7 +246,9 @@ int main (void){
         if(onBoot) {
           // Run some code in the beginning to reset network
           printf("Reseting all shock controllers\r\n");
-          resetAllNodes(shockControllersNodes,NUM_SHOCKS);
+
+          //TODO FIX
+          //resetAllNodes(shockControllersNodes,NUM_SHOCKS);
           onBoot = false;
         }
 
@@ -243,10 +258,8 @@ int main (void){
           //BSP_LED_On(LED2);
         }
 
-        if(HAL_GetTick() - lastNMTCommandTime >= nmtCommandDelay) {
-          lastNMTCommandTime = HAL_GetTick();
-          //CO->TPDO[0]->sendRequest = true;
-        }
+        // Calculate velocites based on previous data
+
 
         /* optional sleep for short time */
     }
@@ -293,25 +306,16 @@ void tmrTask_thread(void){
       /* Process Sync */
       syncWas = CO_process_SYNC(CO, TMR_TASK_INTERVAL, NULL);
 
-      // Set a flag when we expect new data from the sensors
-      if(syncWas) {
-        syncCounter++;
-        if(syncCounter == numSyncPerDataReq) {
-          expectingNewData = true;
-          syncCounter = 0;
-        }
-      }
-
-
       /* Read inputs */
       CO_process_RPDO(CO, syncWas);
 
       // Check if there was new sensor data added to the OD
       if(DoesOdContainNewData()) {
         // Copy the data out of the OD
-        if(PushNewDataOntoFifo() == false) {
-          // Error pushing new data
-          // Throw error????
+        if(PushNewDataOntoFifo() >= 0) {
+          // Notify the main loop that a shock controller sent new data and to process it
+        } else {
+          // Something went wrong with the data collection
           CO_errorReport(CO->em,CO_EM_GENERIC_SOFTWARE_ERROR,CO_EMC_SOFTWARE_INTERNAL,0U);
 
           // Enter into stop mode?

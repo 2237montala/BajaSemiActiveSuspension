@@ -71,12 +71,12 @@ bool DataCollectionInit(CO_t *CO, uint32_t shockSensorAccelOdIndex,
     return true;
 }
 
-bool PushNewDataOntoFifo(void) {
+int PushNewDataOntoFifo(void) {
     // Get the newest data from the OD
     bool status = CopyShockDataFromOD(&lastOdSensorData);
     if(!status) {
         // Error copying data
-        return false;
+        return -1;
     }
 
     // TODO: Change adding to fifo based on who sent the data
@@ -92,11 +92,11 @@ bool PushNewDataOntoFifo(void) {
         // Add new sample to the fifo
         _fff_write_lite(IMCOMING_SHOCK_SENSOR_DATA_FIFO_NAME[fifoIndex],lastOdSensorData.sensorData);
 
-        return true;
+        return fifoIndex;
     } else {
         // Index couldn't be found
         // The sender ID wasn't known
-        return false;
+        return -1;
     }
 }
 
