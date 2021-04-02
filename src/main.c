@@ -12,6 +12,12 @@
   #include "CANopen.h"
 #endif
 
+// Struct definitions 
+struct ShockControllerNodeStatus {
+  uint8_t canOpenId;
+  bool hasNewData;
+};
+
 /* Private function prototypes -----------------------------------------------*/
 
 static void SystemClock_Config(void);
@@ -22,9 +28,9 @@ void ShockControllerNMTChange(uint8_t nodeId,uint8_t idx, CO_NMT_internalState_t
 void ShockControllerHBReceived(uint8_t nodeId, uint8_t idx, void *object);
 void ShockControllerHBStopped(uint8_t nodeId, uint8_t idx, void *object);
 
-void enableHBCallBacks(uint8_t *nodeIds, uint8_t numNodes);
-void resetAllNodes(uint8_t *nodeIds, uint8_t numNodes);
-void enableHBForAllNodes(uint8_t *nodeIds, uint8_t numNodes);
+void enableHBCallBacksForAllNodes(uint8_t numNodes);
+void resetAllNodes(struct ShockControllerNodeStatus *nodes, uint8_t numNodes);
+void enableHBForAllNodes(struct ShockControllerNodeStatus *nodes, uint8_t numNodes);
 
 // Private functions for control system
 void createInitialDamperProfiles();
@@ -43,10 +49,7 @@ TIM_HandleTypeDef msTimer = {.Instance = TIM6};
 #define TMR_TASK_INTERVAL_MS (TMR_TASK_INTERVAL/1000)
 #define INCREMENT_1MS(var)  (var++)         /* Increment 1ms variable in tmrTask */
 
-struct ShockControllerNodeStatus {
-  uint8_t canOpenId;
-  bool hasNewData;
-};
+
 
 struct ShockControllerNodeStatus shockControllerNodes[NUM_SHOCKS];
 
@@ -140,15 +143,14 @@ int main (void){
       return 0;
   }
   else {
-      log_printf("Allocated %d bytes for CANopen objects\r\n", heapMemoryUsed);
+      log_printf("Allocated %lu bytes for CANopen objects\r\n", heapMemoryUsed);
   }
 
   while(reset != CO_RESET_APP){
     /* CANopen communication reset - initialize CANopen objects *******************/
     uint16_t timer1msPrevious;
 
-    // TODO: FIX
-    //enableHBForAllNodes(shockControllersNodes,NUM_SHOCKS);
+    enableHBForAllNodes(shockControllerNodes,NUM_SHOCKS);
 
     log_printf("CANopenNode - Reset communication...\r\n");
 
@@ -211,9 +213,8 @@ int main (void){
     // Enable interrupts for timer
     HAL_TIM_Base_Start_IT(&msTimer);
 
-    // TODO: FIX
     // Set up callbacks for certain functions
-    //enableHBCallBacks(shockControllersNodes,NUM_SHOCKS);
+    enableHBCallBacksForAllNodes(NUM_SHOCKS);
 
     /* start CAN */
     CO_CANsetNormalMode(CO->CANmodule[0]);
@@ -247,8 +248,7 @@ int main (void){
           // Run some code in the beginning to reset network
           printf("Reseting all shock controllers\r\n");
 
-          //TODO FIX
-          //resetAllNodes(shockControllersNodes,NUM_SHOCKS);
+          resetAllNodes(shockControllerNodes,NUM_SHOCKS);
           onBoot = false;
         }
 
@@ -314,6 +314,7 @@ void tmrTask_thread(void){
         // Copy the data out of the OD
         if(PushNewDataOntoFifo() >= 0) {
           // Notify the main loop that a shock controller sent new data and to process it
+
         } else {
           // Something went wrong with the data collection
           CO_errorReport(CO->em,CO_EM_GENERIC_SOFTWARE_ERROR,CO_EMC_SOFTWARE_INTERNAL,0U);
@@ -475,21 +476,23 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
     }
 }
 
-void resetAllNodes(uint8_t *nodeIds, uint8_t numNodes) {
+void resetAllNodes(struct ShockControllerNodeStatus *nodes, uint8_t numNodes) {
   for(uint8_t i = 0; i < numNodes; i++) {
-    CO_NMT_sendCommand(CO->NMT,CO_NMT_RESET_NODE,nodeIds[i]);
+    CO_NMT_sendCommand(CO->NMT,CO_NMT_RESET_NODE,nodes[i].canOpenId);
   }
 }
 
-void enableHBForAllNodes(uint8_t *nodeIds, uint8_t numNodes) {
+void enableHBForAllNodes(struct ShockControllerNodeStatus *nodes, uint8_t numNodes)
+{
   for(uint8_t i = 0; i < numNodes; i++) {
-      uint32_t temp = (nodeIds[i]) << 16U;
+    uint32_t temp = nodes[i].canOpenId << 16U;
       temp |= SHOCK_CONTROLLER_HEARTBEAT_INTERVAL + SHOCK_CONTROLLER_HEARTBEAT_INTERVAL_OFFSET;
       OD_consumerHeartbeatTime[i] = temp;
   }
+
 }
 
-void enableHBCallBacks(uint8_t *nodeIds, uint8_t numNodes) {
+void enableHBCallBacksForAllNodes(uint8_t numNodes) {
   for(uint8_t i = 0; i < numNodes; i++) {
     CO_HBconsumer_initCallbackRemoteReset(CO->HBcons,i,
                                           NULL,ShockControllerBooted);
