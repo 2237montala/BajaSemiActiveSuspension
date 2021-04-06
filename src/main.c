@@ -5,6 +5,7 @@
 #include "Uart.h"
 #include "targetCommon.h"
 #include "DataCollection.h"
+#include "DataProcessing.h"
 
 #include "ControlSys.h"
 
@@ -34,6 +35,7 @@ void enableHBForAllNodes(struct ShockControllerNodeStatus *nodes, uint8_t numNod
 
 // Private functions for control system
 void createInitialDamperProfiles();
+bool DoAllNodesHaveNewData(struct ShockControllerNodeStatus *nodeArray, uint32_t arrayLen);
 
 
 
@@ -230,6 +232,7 @@ int main (void){
     bool startUpComplete = false;
     uint16_t timer1msCopy, timer1msDiff;
     bool onBoot = true;
+    bool firstSetOfData = true;
     while(reset == CO_RESET_NOT && !startUpComplete){
         timer1msCopy = CO_timer1ms;
         timer1msDiff = timer1msCopy - timer1msPrevious;
@@ -260,7 +263,23 @@ int main (void){
         }
 
         // Calculate velocites based on previous data
-        // Check if any of the nodes have new data
+        // Check if all the nodes have new data
+        if(DoAllNodesHaveNewData(shockControllerNodes,NUM_SHOCKS)) {
+          // Disable CO thread interrupt as we will be accessing the data fifos
+          // We need to prevent the fifo changing mid calculation
+
+          // Compute all the velocities
+          if(DataProcessingComputeVelocities(firstSetOfData) > 0) {
+            // Error with computing values
+            // One of the fifos must have been empty somehow
+            // Stop the program as this is a code problem
+          }
+
+          firstSetOfData = false;
+
+          // Enable CO thread interrupt 
+        }
+
 
 
         /* optional sleep for short time */
@@ -576,4 +595,16 @@ void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan) {
   printf("CAN TEC Error: %d\r\n", tecErrors);
   printf("CAN REC Error: %d\r\n", recErrors);
   printf("CAN error: 0x%lx\r\n", hcan->ErrorCode);
+}
+
+bool DoAllNodesHaveNewData(struct ShockControllerNodeStatus *nodeArray, uint32_t arrayLen) {
+  uint32_t i = 0;
+  bool newData = true;
+  while(i < arrayLen && newData) {
+    if(!nodeArray[i].hasNewData) {
+      newData = false;
+    }
+  }
+
+  return newData;
 }
