@@ -180,12 +180,18 @@ static int GetFifoIndexFromId(uint8_t id) {
     switch(id) {
         case SHOCK_CONTROLLER_ONE_ID:
             return shockControllerOneIndex;
+        #if SHOCK_CONTROLLER_TWO_ID != 0
         case SHOCK_CONTROLLER_TWO_ID:
             return shockControllerTwoIndex;
+        #endif
+        #if SHOCK_CONTROLLER_THREE_ID != 0
         case SHOCK_CONTROLLER_THREE_ID:
             return shockControllerThreeIndex;
+        #endif
+        #if SHOCK_CONTROLLER_FOUR_ID != 0
         case SHOCK_CONTROLLER_FOUR_ID:
             return shockControllerFourIndex;
+        #endif
         default:
             return -1;
     }
@@ -205,16 +211,20 @@ bool DoesOdContainNewData(void) {
 
     // Compare the current OD data with the last copy of the OD values
     // The copy is only updated when different sensor data is saved
-
-    if(currOdData.senderCanId == lastOdSensorData.senderCanId) {
+    // Zero is the default state for the senderCanId. It is also not possible in this setup
+    if(currOdData.senderCanId > 0x0) {
+      if(currOdData.senderCanId == lastOdSensorData.senderCanId) {
         // Senders are the same so check the data structs
         // If they are equal, memcmp returns 0, then they are the same data so return false
         return memcmp(&(currOdData.sensorData),&(lastOdSensorData.sensorData),
                       sizeof(currOdData.sensorData)) != 0;
-    } else {
-        // Data in OD is from a different sender so it's new
-        return true;
+      } else {
+          // Data in OD is from a different sender so it's new
+          return true;
+      }
     }
+
+    return false;
 }
 
 // static bool CopyArrayDataFromOD(CO_SDO_t *SDO, uint32_t odIndex, void **dataPtr, uint32_t *dataLenInBytes) {

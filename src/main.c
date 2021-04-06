@@ -104,6 +104,7 @@ int main (void){
 
   // Initialize global variables
   // Configure the controller node array based on which nodes are active
+  // TODO: fix this function. It won't work for more than one controller
   for(int i = 0; i < NUM_SHOCKS; i++) {
       if(SHOCK_CONTROLLER_ONE_ID != 0) {
           shockControllerNodes[i].canOpenId = SHOCK_CONTROLLER_ONE_ID;
@@ -259,6 +260,7 @@ int main (void){
         }
 
         // Calculate velocites based on previous data
+        // Check if any of the nodes have new data
 
 
         /* optional sleep for short time */
@@ -312,8 +314,10 @@ void tmrTask_thread(void){
       // Check if there was new sensor data added to the OD
       if(DoesOdContainNewData()) {
         // Copy the data out of the OD
-        if(PushNewDataOntoFifo() >= 0) {
+        uint8_t fifoIndex = PushNewDataOntoFifo();
+        if(fifoIndex >= 0) {
           // Notify the main loop that a shock controller sent new data and to process it
+          shockControllerNodes[fifoIndex].hasNewData = true;
 
         } else {
           // Something went wrong with the data collection
@@ -556,7 +560,20 @@ void ShockControllerHBStopped(uint8_t nodeId, uint8_t idx, void *object) {
 }
 
 void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan) {
-    printf("CAN TEC Error: %lu\r\n", (hcan->Instance->ESR & CAN_ESR_TEC_Msk) >> CAN_ESR_TEC_Pos);
-    printf("CAN REC Error: %lu\r\n", (hcan->Instance->ESR & CAN_ESR_REC_Msk) >> CAN_ESR_REC_Pos);
-    printf("CAN error: 0x%lx\r\n", hcan->ErrorCode);
+  uint8_t tecErrors = (hcan->Instance->ESR & CAN_ESR_TEC_Msk) >> CAN_ESR_TEC_Pos;
+  uint8_t recErrors = (hcan->Instance->ESR & CAN_ESR_REC_Msk) >> CAN_ESR_REC_Pos;
+  uint32_t errorCode = hcan->ErrorCode;
+
+  // Reset tx error if we have exited the warning state
+  if(CO_isError(CO->em,CO_EM_CAN_BUS_WARNING) && tecErrors < 127) {
+    CO_errorReset(CO->em,CO_EM_CAN_BUS_WARNING, 0);
+  }
+
+  if(CO_isError(CO->em,CO_EM_CAN_BUS_WARNING) && recErrors < 127) {
+    CO_errorReset(CO->em,CO_EM_CAN_BUS_WARNING, 0);
+  }
+
+  printf("CAN TEC Error: %d\r\n", tecErrors);
+  printf("CAN REC Error: %d\r\n", recErrors);
+  printf("CAN error: 0x%lx\r\n", hcan->ErrorCode);
 }

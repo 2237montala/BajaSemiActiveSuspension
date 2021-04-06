@@ -4,6 +4,8 @@
         "controlsys.h": "c",
         "shockdata.h": "c",
         "config.h": "c",
-        "shockdamperprofile.h": "c"
+        "shockdamperprofile.h": "c",
+        "fifofast.h": "c",
+        "canopen.h": "c"
     }
 }

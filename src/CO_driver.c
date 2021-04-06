@@ -185,7 +185,7 @@ CO_ReturnError_t CO_CANmodule_init(
 	CanHandle->Init.Mode = CAN_MODE_NORMAL;
 	CanHandle->Init.SyncJumpWidth = CAN_SJW_1TQ;
 	CanHandle->Init.TimeTriggeredMode = DISABLE;
-	CanHandle->Init.AutoBusOff = DISABLE;
+	CanHandle->Init.AutoBusOff = ENABLE;
 	CanHandle->Init.AutoWakeUp = DISABLE;
 	CanHandle->Init.AutoRetransmission = ENABLE;
 	CanHandle->Init.ReceiveFifoLocked = DISABLE;
@@ -212,6 +212,10 @@ CO_ReturnError_t CO_CANmodule_init(
         /* Initialization Error */
         return CO_ERROR_TIMEOUT;
     }
+
+    // Set the CAN module to stop during debug mode
+    SET_BIT(CanHandle->Instance->MCR,0x1<<16);
+    
 
     // Reset the bxCan module incase we didn't do a full power off restart
     HAL_CAN_ResetError(CanHandle);
