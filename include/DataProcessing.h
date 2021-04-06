@@ -1,11 +1,11 @@
 #pragma once
 
 #include "config.h"
+#include "stdbool.h"
 #include "ShockData.h"
 #include "fifofast.h"
 
-// Data collection is the producer and this class is the consumer
-#include "DataCollection.h"
+
 
 #define CONTROL_SYSTEM_SHOCK_DATA_FIFO_NAME controlSystemShockData
 
@@ -13,7 +13,7 @@ _fff_declare_a(ControlSystemShockData_t,CONTROL_SYSTEM_SHOCK_DATA_FIFO_NAME,SHOC
 
 int DataProcessingInit();
 
-int DataProcessingComputeVelocities();
+int DataProcessingComputeVelocities(bool firstRun);
 
-int DataProcessingComputeVelocity(uint32_t fifoIndex, float32_t *computedVelocity);
+int DataProcessingComputeVelocity(ControlSystemShockData_t *dataToBeStored, uint32_t fifoIndex, bool firstRun);
 
