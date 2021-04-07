@@ -13,7 +13,8 @@ _fff_declare_a(ControlSystemShockData_t,CONTROL_SYSTEM_SHOCK_DATA_FIFO_NAME,SHOC
 
 int DataProcessingInit();
 
-int DataProcessingComputeVelocities(bool firstRun);
+int DataProcessingComputeVelocities(bool firstRun, uint32_t dt);
 
-int DataProcessingComputeVelocity(ControlSystemShockData_t *dataToBeStored, uint32_t fifoIndex, bool firstRun);
+int DataProcessingComputeVelocity(ControlSystemShockData_t *dataToBeStored, uint32_t fifoIndex,
+                                  float32_t dt, bool firstRun);
 

@@ -22,18 +22,18 @@ static float32_t computeVelocityFromAccel(float32_t v1, float32_t a1, float32_t 
  * PARAMETERS
  *      d1 - floating point number of the previous x position
  *      d2 - floating point number of the current x position
- *      deltaT - floating point number of the time between the two positions
+ *      deltaT - integer of number of milliseconds between samples
  * RETURNS
  *      float - the velocity if no errors.
  */
-static float32_t computeVelocityFromDisp(float32_t d1, float32_t d2, float32_t deltaT);
+static float32_t computeVelocityFromDisp(float32_t d1, float32_t d2, uint32_t deltaT);
 
 int DataProcessingInit() {
     _fff_init_a(CONTROL_SYSTEM_SHOCK_DATA_FIFO_NAME,NUM_SHOCKS);
     return 1;
 }
 
-int DataProcessingComputeVelocities(bool firstRun) {
+int DataProcessingComputeVelocities(bool firstRun, uint32_t dt) {
     // Iterate through all the fifos and compute the velocity over the last 
     // n samples. Store this new velocity in the control system data fifo
     ControlSystemShockData_t dataToBeStored = { 0 };
@@ -41,7 +41,7 @@ int DataProcessingComputeVelocities(bool firstRun) {
     
 
     for(int i = 0; i < NUM_SHOCKS; i++) {
-        if(DataProcessingComputeVelocity(&dataToBeStored,i,firstRun) == 0) {
+        if(DataProcessingComputeVelocity(&dataToBeStored,i,dt,firstRun) == 0) {
             // No error so add the data to the fifo
             // Check if there is enough room in the fifo
             if(_fff_is_full(CONTROL_SYSTEM_SHOCK_DATA_FIFO_NAME[i])) {
@@ -59,7 +59,8 @@ int DataProcessingComputeVelocities(bool firstRun) {
 }
 
 
-int DataProcessingComputeVelocity(ControlSystemShockData_t *dataToBeStored, uint32_t fifoIndex, bool firstRun) {
+int DataProcessingComputeVelocity(ControlSystemShockData_t *dataToBeStored, uint32_t fifoIndex,
+                                  uint32_t dt, bool firstRun) {
     if(_fff_is_empty(IMCOMING_SHOCK_SENSOR_DATA_FIFO_NAME[fifoIndex])) {
         // No data in fifo so no point in continuing
         return -1;
@@ -73,7 +74,7 @@ int DataProcessingComputeVelocity(ControlSystemShockData_t *dataToBeStored, uint
         dataToBeStored->dy = computeVelocityFromAccel(0.0f,0.0f,
                                                     sensorData.accels[DY_VELOCITY_AXIS]);
 
-        dataToBeStored->dLinearPos = computeVelocityFromDisp(0.0f,0.0f,sensorData.linearPos);
+        dataToBeStored->dLinearPos = computeVelocityFromDisp(0.0f,sensorData.linearPos,dt);
     } else {
         // Compute velocity with previous values
         ControlSystemShockData_t prevControlSysData = 
@@ -104,7 +105,7 @@ static float32_t computeVelocityFromAccel(float32_t v1, float32_t a1, float32_t 
     return v1 * ((a1 + a2)/2);
 }
 
-static float32_t computeVelocityFromDisp(float32_t d1, float32_t d2, float32_t deltaT) {
+static float32_t computeVelocityFromDisp(float32_t d1, float32_t d2, uint32_t deltaT) {
     // Compute the derivative the of the displacement by doing rise over run
 
     // Check if the difference will equal zero becasue then we'd end up with inf
@@ -113,5 +114,5 @@ static float32_t computeVelocityFromDisp(float32_t d1, float32_t d2, float32_t d
     if ((d1 - d2) == 0) {
         return 0;
     }
-    return (d1 - d2) / deltaT;
+    return (d1 - d2) / (float32_t)deltaT;
 }
