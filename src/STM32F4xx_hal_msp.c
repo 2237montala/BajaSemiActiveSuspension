@@ -3,10 +3,10 @@
 #include "stm32f4xx_hal.h"
 
 // Interrupt priorities
-#define TIM6_IRQ_PRIORITY 0xF
-#define CAN1_TX_IRQ_PRIORITY 0xA
-#define CAN1_RX0_IRQ_PRIORITY 0xA
-#define CAN1_RX1_IRQ_PRIORITY 0xA
+#define TIM6_IRQ_PRIORITY 0xA
+#define CAN1_TX_IRQ_PRIORITY 0x8
+#define CAN1_RX0_IRQ_PRIORITY 0x8
+#define CAN1_RX1_IRQ_PRIORITY 0x8
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -14,9 +14,6 @@
 /* Private variables ---------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
-#define CAN1_TX_IRQ_PRIORITY 0xA
-#define CAN1_RX0_IRQ_PRIORITY 0xA
-#define CAN1_RX1_IRQ_PRIORITY 0xA
 
 /**
   * @brief CAN MSP Initialization 
