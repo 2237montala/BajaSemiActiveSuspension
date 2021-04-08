@@ -16,5 +16,7 @@ int DataProcessingInit();
 int DataProcessingComputeVelocities(bool firstRun, uint32_t dt);
 
 int DataProcessingComputeVelocity(ControlSystemShockData_t *dataToBeStored, uint32_t fifoIndex,
-                                  float32_t dt, bool firstRun);
+                                  uint32_t dt, bool firstRun);
+
+ControlSystemShockData_t DataProcessingGetNewestData(uint32_t index);
 

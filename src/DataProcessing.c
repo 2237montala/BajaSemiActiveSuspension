@@ -100,6 +100,10 @@ int DataProcessingComputeVelocity(ControlSystemShockData_t *dataToBeStored, uint
     return 0;
 }
 
+ControlSystemShockData_t DataProcessingGetNewestData(uint32_t index) {
+    return _fff_peek(CONTROL_SYSTEM_SHOCK_DATA_FIFO_NAME[index],0);
+}
+
 static float32_t computeVelocityFromAccel(float32_t v1, float32_t a1, float32_t a2) {
     // Simple approximation of acceleration integration
     return v1 * ((a1 + a2)/2);

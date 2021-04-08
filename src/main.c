@@ -67,7 +67,7 @@ uint8_t numSyncPerDataReq = SHOCK_DATA_COLLECTION_RATE/TMR_TASK_INTERVAL_MS;
 bool expectingNewData = false;
 
 // Create a shock control system struct to be used
-struct ShockControlSystem shockControlSystems; 
+struct ShockControlSystem shockControlSystems[NUM_SHOCKS]; 
 
 // LED values and pins
 #define GREEN_LED_PIN D8
@@ -183,7 +183,7 @@ int main (void){
                      OD_6100_readAccelRPY,OD_6060_readShockDataSenderID);
 
     // Set up the control system
-    ControlSystemInit(&shockControlSystems,NUM_SHOCKS,defaultProfile);
+    ControlSystemInit(shockControlSystems,NUM_SHOCKS,defaultProfile);
     //calculateAllDampingValues(&newestData);
 
 
@@ -280,6 +280,10 @@ int main (void){
 
         // Run the control system if we have new data
         if(firstSetOfData && newVelocityData) {
+          //calculateAllDampingValues(&shockControlSystems,);
+
+          // Reset state
+          newVelocityData = false;
         }
 
 
@@ -595,7 +599,7 @@ void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan) {
 
   printf("CAN TEC Error: %d\r\n", tecErrors);
   printf("CAN REC Error: %d\r\n", recErrors);
-  printf("CAN error: 0x%lx\r\n", hcan->ErrorCode);
+  printf("CAN error: 0x%lx\r\n", errorCode);
 }
 
 bool DoAllNodesHaveNewData(struct ShockControllerNodeStatus *nodeArray, uint32_t arrayLen) {

@@ -35,9 +35,9 @@ void ControlSystemInit(struct ShockControlSystem *shockControlSystem, int numSho
 
     // Set up all the PID controllers
     for(int i = 0; i < numShocks; i++) {
-        PidInstanceInitF32(&(shockControlSystem->shockPidControllers[i]));
+        PidInstanceInitF32(&(shockControlSystem[i].shockPidController));
 
-        PidInstanceSetParamsF32(&(shockControlSystem->shockPidControllers[i]), 
+        PidInstanceSetParamsF32(&(shockControlSystem[i].shockPidController), 
                                 startingCoefs.PID_P,
                                 startingCoefs.PID_I,
                                 startingCoefs.PID_D);
@@ -55,13 +55,13 @@ static void calculateControlSystemParameters() {
 }
 
 void calculateDampingValue(struct ShockControlSystem *shockControlSystemUnit, 
-                                uint32_t shockIndex, float32_t dx, float32_t dy, float32_t dt) {
+                                float32_t dx, float32_t dy, uint32_t dt) {
     // Change is shock vertical acceleration (dy)
     float32_t shockVertVel = dy;
 
     // The rate of change of shock length (dx)
     float32_t shockLenVel = dx;
-    float32_t lastPidOutput = shockControlSystemUnit->previousPidOutputs[shockIndex];
+    float32_t lastPidOutput = shockControlSystemUnit->previousPidOutput;
 
     float32_t fd_ideal = -1.0f * shockVertVel * cc;
     float32_t fd_ideal_star = fd_ideal + lastPidOutput;
@@ -86,36 +86,31 @@ void calculateDampingValue(struct ShockControlSystem *shockControlSystemUnit,
         tempPreData[PID_PREV_ERROR] = pidError;
 
         // Set PID to reference a fake pidError for the first run
-        PidInstanceSetInitPrevData(&(shockControlSystemUnit->shockPidControllers[shockIndex]),tempPreData);
+        PidInstanceSetInitPrevData(&(shockControlSystemUnit->shockPidController),tempPreData);
 
         firstRun = false;
-    } else {
-        
-        
-    }
+    } 
 
     // Save the new PID output for the next cycle
     float32_t pid = lastPidOutput + 
-                    PidComputeF32(&(shockControlSystemUnit->shockPidControllers[shockIndex]), pidError, dt)
+                    PidComputeF32(&(shockControlSystemUnit->shockPidController), pidError, (float32_t)dt)
                      * dt;
 
-    shockControlSystemUnit->previousPidOutputs[shockIndex] = pid;
+    shockControlSystemUnit->previousPidOutput = pid;
 
-    shockControlSystemUnit->previousDamperValues[shockIndex] = fd_real;
+    shockControlSystemUnit->previousDamperValue = fd_real;
 }
 
-void calculateAllDampingValues(struct ShockControlSystem *shockControlSystems, 
-                               ControlSystemShockData_t *controlSystemData) {
-  for(int i = 0; i < NUM_SHOCKS; i++) {
+void calculateAllDampingValues(struct ShockControlSystem *shockControlSystem, 
+                               ControlSystemShockData_t *controlSystemShockData, uint32_t dtMs) {
     float32_t tempDy, tempDLinearPos;
-    tempDLinearPos = controlSystemData->dLinearPos;
-    tempDy = controlSystemData->dy;
-    calculateDampingValue(shockControlSystems, i, tempDLinearPos, 
-                          tempDy, SHOCK_DATA_COLLECTION_RATE_SEC);
+    tempDLinearPos = controlSystemShockData->dLinearPos;
+    tempDy = controlSystemShockData->dy;
+    calculateDampingValue(shockControlSystem, tempDLinearPos, 
+                          tempDy, dtMs);                           
 
     // Take new damper value and convert to valve position
     // TODO: write this function
-  }
 }
 
 //------------ Helper Function ---------------------------------

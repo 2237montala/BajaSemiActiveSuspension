@@ -6,6 +6,8 @@
         "config.h": "c",
         "shockdamperprofile.h": "c",
         "fifofast.h": "c",
-        "canopen.h": "c"
+        "canopen.h": "c",
+        "dataprocessing.h": "c",
+        "targetspecific.h": "c"
     }
 }

@@ -13,9 +13,12 @@
 
 struct ShockControlSystem {
     //Create field to hold all the shock pid systems
-    struct pid_instance_f32_struct shockPidControllers[NUM_SHOCKS];
-    float32_t previousPidOutputs[NUM_SHOCKS];
-    float32_t previousDamperValues[NUM_SHOCKS];
+    // struct pid_instance_f32_struct shockPidControllers[NUM_SHOCKS];
+    // float32_t previousPidOutputs[NUM_SHOCKS];
+    // float32_t previousDamperValues[NUM_SHOCKS];
+    struct pid_instance_f32_struct shockPidController;
+    float32_t previousPidOutput;
+    float32_t previousDamperValue;
 };
 
 /*
@@ -46,7 +49,7 @@ void ControlSystemInit(struct ShockControlSystem *shockControlSystem, int numSho
  *      
  */
 void calculateDampingValue(struct ShockControlSystem *shockControlSystemUnit, 
-                                uint32_t shockIndex, float32_t dx, float32_t dy, float32_t dt);
+                           float32_t dx, float32_t dy, uint32_t dt);
 
 /*
  * PURPOSE
@@ -59,9 +62,6 @@ void calculateDampingValue(struct ShockControlSystem *shockControlSystemUnit,
  * RETURNS
  *      None
  */
-void calculateDampingValues(int numShocks,struct ShockControlSystem *shockUnits, 
-                            float32_t *controlSystemOutputs);
-
-void calculateAllDampingValues(struct ShockControlSystem *shockControlSystems, 
-                               ControlSystemShockData_t *controlSystemData);
+void calculateAllDampingValues(struct ShockControlSystem *shockControlSystem, 
+                               ControlSystemShockData_t *controlSystemShockData, uint32_t dtMs);
 
