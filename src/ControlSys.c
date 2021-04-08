@@ -54,7 +54,7 @@ static void calculateControlSystemParameters() {
     c_low = CONTROL_SYSTEM_ZETA_MIN * cc;
 }
 
-void calculateDampingValue(struct ShockControlSystem *shockControlSystemUnit, 
+static void calculateDampingValue(struct ShockControlSystem *shockControlSystemUnit, 
                                 float32_t dx, float32_t dy, uint32_t dt) {
     // Change is shock vertical acceleration (dy)
     float32_t shockVertVel = dy;
@@ -101,7 +101,7 @@ void calculateDampingValue(struct ShockControlSystem *shockControlSystemUnit,
     shockControlSystemUnit->previousDamperValue = fd_real;
 }
 
-void calculateAllDampingValues(struct ShockControlSystem *shockControlSystem, 
+void ControlSystemComputeDampingValue(struct ShockControlSystem *shockControlSystem, 
                                ControlSystemShockData_t *controlSystemShockData, uint32_t dtMs) {
     float32_t tempDy, tempDLinearPos;
     tempDLinearPos = controlSystemShockData->dLinearPos;

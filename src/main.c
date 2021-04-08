@@ -40,7 +40,8 @@ bool DoAllNodesHaveNewData(struct ShockControllerNodeStatus *nodeArray, uint32_t
 uint8_t DisableCoTimerIrq();
 void EnableCoTimerIrq(uint8_t basePri);
 
-void ComputeVelocities(bool firstRun, uint32_t lastRunTimeMs);
+void ComputeVelocities(bool firstRun, uint32_t dt);
+void ComputeAllDampingValue(uint32_t dt);
 
 
 
@@ -238,8 +239,10 @@ int main (void){
     uint16_t timer1msCopy, timer1msDiff;
     bool onBoot = true;
     bool firstSetOfData = true;
-    bool newVelocityData = true;
+    bool newVelocityData = false;
+    bool dampingValuesReady = false;
     uint32_t lastVelocityComputeMs = 0;
+    uint32_t controlSystemDt = 0;
     while(reset == CO_RESET_NOT && !startUpComplete){
         timer1msCopy = CO_timer1ms;
         timer1msDiff = timer1msCopy - timer1msPrevious;
@@ -272,20 +275,29 @@ int main (void){
         // Calculate velocites based on previous data
         // Check if all the nodes have new data
         if(DoAllNodesHaveNewData(shockControllerNodes,NUM_SHOCKS)) {
-          ComputeVelocities(firstSetOfData,lastVelocityComputeMs);
+          uint32_t controlSystemDt = (HAL_GetTick() - lastVelocityComputeMs);
+          ComputeVelocities(firstSetOfData,controlSystemDt);
           
           firstSetOfData = false;
           newVelocityData = true;
         }
 
         // Run the control system if we have new data
-        if(firstSetOfData && newVelocityData) {
-          //calculateAllDampingValues(&shockControlSystems,);
+        if(!firstSetOfData && newVelocityData) {
+          ComputeAllDampingValue(controlSystemDt);
 
           // Reset state
           newVelocityData = false;
+          dampingValuesReady = true;
         }
 
+        // If we have new damping values then send those values out
+        if(!firstSetOfData && dampingValuesReady) {
+          // Send the damping values to the shock controllers
+          // TODO: Write this function
+          
+          dampingValuesReady = false;
+        }
 
         /* optional sleep for short time */
     }
@@ -629,13 +641,12 @@ void EnableCoTimerIrq(uint8_t basePri) {
   __set_BASEPRI(basePri);
 }
 
-void ComputeVelocities(bool firstRun, uint32_t lastRunTimeMs) {
+void ComputeVelocities(bool firstRun, uint32_t dt) {
   // Disable CO thread interrupt as we will be accessing the data fifos
   // We need to prevent the fifo changing mid calculation
   uint8_t oldBasePri = DisableCoTimerIrq();
 
   // Compute all the velocities
-  uint32_t dt = (HAL_GetTick() - lastRunTimeMs);
   if(DataProcessingComputeVelocities(firstRun, dt) > 0) {
     // Error with computing values
     // One of the fifos must have been empty somehow
@@ -644,4 +655,11 @@ void ComputeVelocities(bool firstRun, uint32_t lastRunTimeMs) {
 
   // Enable CO thread interrupt 
   EnableCoTimerIrq(oldBasePri);
+}
+
+void ComputeAllDampingValue(uint32_t dt) {
+  for(int i = 0; i < NUM_SHOCKS; i++) {
+    ControlSystemShockData_t shockData = DataProcessingGetNewestData(i);
+    ControlSystemComputeDampingValue(&(shockControlSystems[i]),&shockData,dt);
+  }
 }

@@ -48,20 +48,19 @@ void ControlSystemInit(struct ShockControlSystem *shockControlSystem, int numSho
  * RETURNS
  *      
  */
-void calculateDampingValue(struct ShockControlSystem *shockControlSystemUnit, 
+static void calculateDampingValue(struct ShockControlSystem *shockControlSystemUnit, 
                            float32_t dx, float32_t dy, uint32_t dt);
 
 /*
  * PURPOSE
  *      Calculates the output of all the control systmes in the system
  * PARAMETERS
- *      numShocks - the number of shocks in the system
- *      shockUnits - a pointer to an array of ShockControlSystem sturtures
- *      controlSystemOutputs - a pointer to an array where the output of each control 
- *                             system will go
+ *      *shockControlSystem - a pointer to the control system structure 
+ *      *controlSystemShockData - a pointer to the structure hold the shock data
+ *      dtMs - the time difference between this run and the last run in ms
  * RETURNS
  *      None
  */
-void calculateAllDampingValues(struct ShockControlSystem *shockControlSystem, 
+void ControlSystemComputeDampingValue(struct ShockControlSystem *shockControlSystem, 
                                ControlSystemShockData_t *controlSystemShockData, uint32_t dtMs);
 
