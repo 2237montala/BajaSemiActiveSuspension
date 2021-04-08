@@ -113,17 +113,18 @@ int main (void){
   // Initialize global variables
   // Configure the controller node array based on which nodes are active
   // TODO: fix this function. It won't work for more than one controller
+  memset(shockControllerNodes,0x0,sizeof(shockControllerNodes));
   for(int i = 0; i < NUM_SHOCKS; i++) {
-      if(SHOCK_CONTROLLER_ONE_ID != 0) {
+      if(shockControllerNodes[i].canOpenId != 0 && SHOCK_CONTROLLER_ONE_ID != 0) {
           shockControllerNodes[i].canOpenId = SHOCK_CONTROLLER_ONE_ID;
           // Shock controller one is here
-      } else if(SHOCK_CONTROLLER_TWO_ID != 0) {
+      } else if(shockControllerNodes[i].canOpenId != 0 && SHOCK_CONTROLLER_TWO_ID != 0) {
           shockControllerNodes[i].canOpenId = SHOCK_CONTROLLER_TWO_ID;
           // Shock controller two is here
-      } else if(SHOCK_CONTROLLER_THREE_ID != 0) {
+      } else if(shockControllerNodes[i].canOpenId != 0 && SHOCK_CONTROLLER_THREE_ID != 0) {
           shockControllerNodes[i].canOpenId = SHOCK_CONTROLLER_THREE_ID;
           // Shock controller three is here
-      } else if(SHOCK_CONTROLLER_FOUR_ID != 0) {
+      } else if(shockControllerNodes[i].canOpenId != 0 && SHOCK_CONTROLLER_FOUR_ID != 0) {
           shockControllerNodes[i].canOpenId = SHOCK_CONTROLLER_FOUR_ID;
           // Shock controller four is here
       }
@@ -295,7 +296,7 @@ int main (void){
         if(!firstSetOfData && dampingValuesReady) {
           // Send the damping values to the shock controllers
           // TODO: Write this function
-          
+
           dampingValuesReady = false;
         }
 
