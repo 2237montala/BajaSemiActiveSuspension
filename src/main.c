@@ -37,6 +37,11 @@ void enableHBForAllNodes(struct ShockControllerNodeStatus *nodes, uint8_t numNod
 void createInitialDamperProfiles();
 bool DoAllNodesHaveNewData(struct ShockControllerNodeStatus *nodeArray, uint32_t arrayLen);
 
+uint8_t DisableCoTimerIrq();
+void EnableCoTimerIrq(uint8_t basePri);
+
+void ComputeVelocities(bool firstRun, uint32_t lastRunTimeMs);
+
 
 
 // CANOpen variable/settings -------------------------------------------------------------
@@ -233,6 +238,8 @@ int main (void){
     uint16_t timer1msCopy, timer1msDiff;
     bool onBoot = true;
     bool firstSetOfData = true;
+    bool newVelocityData = true;
+    uint32_t lastVelocityComputeMs = 0;
     while(reset == CO_RESET_NOT && !startUpComplete){
         timer1msCopy = CO_timer1ms;
         timer1msDiff = timer1msCopy - timer1msPrevious;
@@ -265,21 +272,15 @@ int main (void){
         // Calculate velocites based on previous data
         // Check if all the nodes have new data
         if(DoAllNodesHaveNewData(shockControllerNodes,NUM_SHOCKS)) {
-          // Disable CO thread interrupt as we will be accessing the data fifos
-          // We need to prevent the fifo changing mid calculation
-
-          // Compute all the velocities
-          if(DataProcessingComputeVelocities(firstSetOfData) > 0) {
-            // Error with computing values
-            // One of the fifos must have been empty somehow
-            // Stop the program as this is a code problem
-          }
-
+          ComputeVelocities(firstSetOfData,lastVelocityComputeMs);
+          
           firstSetOfData = false;
-
-          // Enable CO thread interrupt 
+          newVelocityData = true;
         }
 
+        // Run the control system if we have new data
+        if(firstSetOfData && newVelocityData) {
+        }
 
 
         /* optional sleep for short time */
@@ -607,4 +608,36 @@ bool DoAllNodesHaveNewData(struct ShockControllerNodeStatus *nodeArray, uint32_t
   }
 
   return newData;
+}
+
+uint8_t DisableCoTimerIrq() {
+  uint8_t oldBasePri = __get_BASEPRI();
+
+  // Set the minimum priority for interrupts to be higher than
+  // the CO timer interrupt
+  // Value needs to be shifted over by 4 following table 9 of Cortex M3
+  // processor programming guide
+  __set_BASEPRI((TIM6_IRQ_PRIORITY << 4));
+  return oldBasePri;
+}
+
+void EnableCoTimerIrq(uint8_t basePri) {
+  __set_BASEPRI(basePri);
+}
+
+void ComputeVelocities(bool firstRun, uint32_t lastRunTimeMs) {
+  // Disable CO thread interrupt as we will be accessing the data fifos
+  // We need to prevent the fifo changing mid calculation
+  uint8_t oldBasePri = DisableCoTimerIrq();
+
+  // Compute all the velocities
+  uint32_t dt = (HAL_GetTick() - lastRunTimeMs);
+  if(DataProcessingComputeVelocities(firstRun, dt) > 0) {
+    // Error with computing values
+    // One of the fifos must have been empty somehow
+    // Stop the program as this is a code problem
+  }
+
+  // Enable CO thread interrupt 
+  EnableCoTimerIrq(oldBasePri);
 }

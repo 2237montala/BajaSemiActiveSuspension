@@ -37,3 +37,9 @@
 #define CANx_RX_PIN                    GPIO_PIN_8
 #define CANx_RX_GPIO_PORT              GPIOB
 #define CANx_RX_AF                     GPIO_AF9_CAN1
+
+// Interrupt priorities for the devices used in the project
+#define TIM6_IRQ_PRIORITY 0xA
+#define CAN1_TX_IRQ_PRIORITY 0x8
+#define CAN1_RX0_IRQ_PRIORITY 0x8
+#define CAN1_RX1_IRQ_PRIORITY 0x8
