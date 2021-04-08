@@ -29,6 +29,21 @@ static void calculateControlSystemParameters();
  */
 static float32_t clamp(float32_t value, float32_t max, float32_t min);
 
+/*
+ * PURPOSE
+ *      Calculates the output of the control system for a single shock
+ * PARAMETERS
+ *      shockControlSystemUnit - a pointer to a ShockControlSystem struct containing all the 
+ *                               data needed to run the control system
+ *      shockIndex             - the index for which shock we are looking at
+ *      dx                     - the x velocity
+ *      dy                     - the y velocity
+ * RETURNS
+ *      
+ */
+static void calculateDampingValue(struct ShockControlSystem *shockControlSystemUnit, 
+                           float32_t dx, float32_t dy, uint32_t dt);
+
 void ControlSystemInit(struct ShockControlSystem *shockControlSystem, int numShocks,
                        struct ShockDamperProfile startingCoefs) {
     calculateControlSystemParameters();
