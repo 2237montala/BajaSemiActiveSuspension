@@ -16,6 +16,7 @@
 // Struct definitions 
 struct ShockControllerNodeStatus {
   uint8_t canOpenId;
+  bool isActive;
   bool hasNewData;
 };
 
@@ -57,15 +58,7 @@ TIM_HandleTypeDef msTimer = {.Instance = TIM6};
 #define TMR_TASK_INTERVAL_MS (TMR_TASK_INTERVAL/1000)
 #define INCREMENT_1MS(var)  (var++)         /* Increment 1ms variable in tmrTask */
 
-
-
 struct ShockControllerNodeStatus shockControllerNodes[NUM_SHOCKS];
-
-
-// Sync counter 
-uint8_t syncCounter = 0;
-uint8_t numSyncPerDataReq = SHOCK_DATA_COLLECTION_RATE/TMR_TASK_INTERVAL_MS;
-bool expectingNewData = false;
 
 // Create a shock control system struct to be used
 struct ShockControlSystem shockControlSystems[NUM_SHOCKS]; 
@@ -82,8 +75,19 @@ bool nmtChanged = false;
 // Handle for CAN object linked with CO and Hal
 CAN_HandleTypeDef     CanHandle;
 
-/* UART handler declaration */
+/* debug UART handler declaration */
 UART_HandleTypeDef debugUartHandle;
+
+#ifdef SOFTWARE_TEST
+#define TEST_DATA_LEN 1
+// Testing data test values
+struct ShockSensorDataOdStruct testData[TEST_DATA_LEN];
+
+void ST_SetupTestDataArray();
+void ST_LoadNewTestData();
+void ST_PrintControlSystemOutput(struct ShockControlSystem *controlSystems, uint32_t len);
+#endif
+
 
 #define log_printf(macropar_message, ...) \
         printf(macropar_message, ##__VA_ARGS__)
@@ -130,7 +134,6 @@ int main (void){
       }
       shockControllerNodes[i].hasNewData = false;
   }
-
 
   // Create temporary shockDamperProfile
   struct ShockDamperProfile defaultProfile = { 0 };
@@ -186,8 +189,6 @@ int main (void){
 
     // Set up the control system
     ControlSystemInit(shockControlSystems,NUM_SHOCKS,defaultProfile);
-    //calculateAllDampingValues(&newestData);
-
 
     /* Configure Timer interrupt function for execution every 1 millisecond */
 
@@ -244,6 +245,10 @@ int main (void){
     bool dampingValuesReady = false;
     uint32_t lastVelocityComputeMs = 0;
     uint32_t controlSystemDt = 0;
+
+    uint32_t controlSystemStartComputeMs = 0;
+    uint32_t controlSystemEndComputeMs = 0;
+
     while(reset == CO_RESET_NOT && !startUpComplete){
         timer1msCopy = CO_timer1ms;
         timer1msDiff = timer1msCopy - timer1msPrevious;
@@ -265,17 +270,23 @@ int main (void){
 
           resetAllNodes(shockControllerNodes,NUM_SHOCKS);
           onBoot = false;
+
+          // Give fake data to run a single test suite
+          #ifdef SOFTWARE_TEST
+          ST_LoadNewTestData();
+          #endif
         }
 
         /* Nonblocking application code may go here. */
-        if(CO->HBcons->allMonitoredOperational) {
-          //startUpComplete = true;
-          //BSP_LED_On(LED2);
-        }
+        // if(CO->HBcons->allMonitoredOperational) {
+        //   //startUpComplete = true;
+        //   //BSP_LED_On(LED2);
+        // }
 
         // Calculate velocites based on previous data
         // Check if all the nodes have new data
         if(DoAllNodesHaveNewData(shockControllerNodes,NUM_SHOCKS)) {
+          controlSystemStartComputeMs = HAL_GetTick();
           uint32_t controlSystemDt = (HAL_GetTick() - lastVelocityComputeMs);
           ComputeVelocities(firstSetOfData,controlSystemDt);
           
@@ -297,7 +308,21 @@ int main (void){
           // Send the damping values to the shock controllers
           // TODO: Write this function
 
+          controlSystemEndComputeMs = HAL_GetTick();
+          log_printf("%lu: New damping values\r\n",HAL_GetTick());
           dampingValuesReady = false;
+
+          // Load in new testing data
+          #ifdef SOFTWARE_TEST
+          // Print out the time to calculate damping values
+          printf("Time to compute %d damping values: %lu\r\n",
+                NUM_SHOCKS,(controlSystemEndComputeMs - controlSystemStartComputeMs));
+
+          // Print out data to verify
+          ST_PrintControlSystemOutput(shockControlSystems,NUM_SHOCKS);
+
+          ST_LoadNewTestData();
+          #endif
         }
 
         /* optional sleep for short time */
@@ -324,6 +349,7 @@ int main (void){
 
   /* program exit ***************************************************************/
   /* stop threads */
+  HAL_TIM_Base_Stop_IT(&msTimer);
 
   /* delete objects from memory */
   CO_delete((void*) 0/* CAN module address */);
@@ -610,21 +636,20 @@ void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan) {
     CO_errorReset(CO->em,CO_EM_CAN_BUS_WARNING, 0);
   }
 
-  printf("CAN TEC Error: %d\r\n", tecErrors);
-  printf("CAN REC Error: %d\r\n", recErrors);
-  printf("CAN error: 0x%lx\r\n", errorCode);
+  printf("CAN TEC/REC/Error: %d/%d/%lx\r\n", tecErrors,recErrors,errorCode);
 }
 
 bool DoAllNodesHaveNewData(struct ShockControllerNodeStatus *nodeArray, uint32_t arrayLen) {
   uint32_t i = 0;
-  bool newData = true;
-  while(i < arrayLen && newData) {
-    if(!nodeArray[i].hasNewData) {
-      newData = false;
+  uint32_t newDataCount = 0;
+  while(i < arrayLen) {
+    if(nodeArray[i].hasNewData) {
+      newDataCount++;
     }
+    i++;
   }
 
-  return newData;
+  return newDataCount == arrayLen;
 }
 
 uint8_t DisableCoTimerIrq() {
@@ -664,3 +689,41 @@ void ComputeAllDampingValue(uint32_t dt) {
     ControlSystemComputeDampingValue(&(shockControlSystems[i]),&shockData,dt);
   }
 }
+
+#ifdef SOFTWARE_TEST
+void ST_SetupTestDataArray() {
+  // Set up testing data for the array
+  testData[0].sensorData.linearPos = -0.0000987f;
+
+  testData[1].sensorData.linearPos = -0.000788716f;
+
+  testData[2].sensorData.linearPos = -0.001473792f;
+
+  testData[3].sensorData.linearPos = -0.002152688f;
+
+}
+
+void ST_LoadNewTestData() {
+  static uint32_t dataCounter = 0;
+
+  // Give fake data to run a single test suite
+  if(dataCounter < TEST_DATA_LEN) {
+    uint8_t temp = DisableCoTimerIrq();
+    DataCollectionLoadNewTestValues(testData[dataCounter]);
+    EnableCoTimerIrq(temp);
+    dataCounter++;
+  }
+}
+
+void ST_PrintControlSystemOutput(struct ShockControlSystem *controlSystems, uint32_t len) {
+  // printf("Accels (X,Y,Z)\r\n");
+  // printf("%2.3f,%2.3f,%2.3f\r\n",controlSysUnit.)
+  for(int i = 0; i < len; i++) {
+    printf("Shock %d\r\n",i);
+    printf("Damping value: %2.4f\r\n",controlSystems[i].previousDamperValue);
+  }
+  
+}
+
+
+#endif

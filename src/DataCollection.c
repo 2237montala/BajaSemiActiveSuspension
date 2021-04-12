@@ -101,15 +101,6 @@ int PushNewDataOntoFifo(void) {
 }
 
 bool CopyShockDataFromOD(struct ShockSensorDataOdStruct *shockOdData) {
-//   // Testing to make sure it gets the new values
-//   CO_OD_RAM.readShockAccel[0] = 1;
-//   CO_OD_RAM.readShockAccel[1] = 2;
-//   CO_OD_RAM.readShockAccel[2] = 3;
-
-//   CO_OD_RAM.readShockAccelStatus = 0x1;
-
-//   CO_OD_RAM.readShockDataSenderID = 0x21;
-
   if(idMapping.odDataPtr == NULL) {
     return false;
   }
@@ -227,44 +218,24 @@ bool DoesOdContainNewData(void) {
     return false;
 }
 
-// static bool CopyArrayDataFromOD(CO_SDO_t *SDO, uint32_t odIndex, void **dataPtr, uint32_t *dataLenInBytes) {
-//   uint32_t dataIndex = CO_OD_find(SDO,odIndex);
+#ifdef SOFTWARE_TEST
+void DataCollectionLoadNewTestValues(struct ShockSensorDataOdStruct *dataToLoad) {
+  if(accelDataMapping.odDataPtr == NULL) {
+    // Something went wrong with getting the data pointer, shouldn't be null
+    return false;
+  }
 
-//   if(dataIndex == 0xFFFF) {
-//     // OD index not found
-//     return false;
-//   }
-
-//   // Get the number of items in the OD index
-//   // Value is returned as a pointer to the variable so cast is as that variable type
-//   uint8_t *numElementsStored = (uint8_t *) CO_OD_getDataPointer(CO->SDO[0],dataIndex,0);
-
-//   // Get the pointer to the data where CAN Open stores the most recent shock accel data 
-//   // This is subIndex > 1
-//   *dataPtr = CO_OD_getDataPointer(CO->SDO[0],dataIndex,1);
-
-//   // Array element length 
-//   if(*numElementsStored == 0) {
-//     *dataLenInBytes = 0;
-//   } else {
-//     uint32_t dateElementLen = CO_OD_getLength(CO->SDO[0],dataIndex,1);
-//     *dataLenInBytes = *numElementsStored * dateElementLen;
-//   }
-//   return true;
-// }
+  // Copy the data over from array to od
+  memcpy(accelDataMapping.odDataPtr,dataToLoad->sensorData.accels,
+         accelDataMapping.dataLengthInBytes);
 
 
-// static bool CopyVarFromOD(CO_SDO_t *SDO, uint32_t odIndex, void **varPtr, uint32_t *varByteSize) {
-//   uint32_t dataIndex = CO_OD_find(CO->SDO[0],odIndex);
+  if(statusMapping.odDataPtr == NULL) {
+    return false;
+  }
 
-//   if(dataIndex == 0xFFFF) {
-//     // OD index not found
-//     return false;
-//   }
-
-//   *varPtr = CO_OD_getDataPointer(CO->SDO[0],dataIndex,0);
-
-//   *varByteSize = CO_OD_getLength(CO->SDO[0],dataIndex,1);
-
-//   return true;
-// }
+  // Copy the data over from array to od
+  memcpy(statusMapping.odDataPtr,&(dataToLoad->sensorData.inFreefall),
+         statusMapping.dataLengthInBytes);
+}
+#endif

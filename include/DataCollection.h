@@ -79,3 +79,8 @@ bool CopyShockDataFromOD(struct ShockSensorDataOdStruct *shockOdData);
  *      True is data in OD is new, false if it is old data
  */
 bool DoesOdContainNewData(void);
+
+
+#ifdef SOFTWARE_TEST
+void DataCollectionLoadNewTestValues();
+#endif
