@@ -20,6 +20,7 @@ env.Append(
         "-mcpu=cortex-m4",
         #"-mcpu=%s" % env.BoardConfig().get("build.cpu"),
         "-mfloat-abi=hard",
-        "-mfpu=fpv4-sp-d16"
+        "-mfpu=fpv4-sp-d16",
+        "-u_printf_float"
     ]
 )
