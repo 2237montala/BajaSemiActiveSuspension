@@ -501,13 +501,20 @@ void setupDebugUart(UART_HandleTypeDef *huart, uint32_t buadRate) {
   * @param  None
   * @retval None
   */
-static void Error_Handler(void)
-{
-  while(true) {
-    BSP_LED_On(LED2);
-    HAL_Delay(500);
+static void Error_Handler(void){
+  /* Turn LED2 on */
+  const int NUM_BLINKS = 2;
+  while (1)
+  {
     BSP_LED_Off(LED2);
-    HAL_Delay(500);
+    // Number of blinks has to be multiplied by 2
+    for(int i = 0; i < 2 * NUM_BLINKS; i++) {
+      BSP_LED_Toggle(LED2);
+      HAL_Delay(250);
+    }
+    BSP_LED_Off(LED2);
+    HAL_Delay(1000);
+
   }
 }
 
