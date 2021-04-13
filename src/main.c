@@ -79,7 +79,7 @@ CAN_HandleTypeDef     CanHandle;
 UART_HandleTypeDef debugUartHandle;
 
 #ifdef SOFTWARE_TEST
-#define TEST_DATA_LEN 1
+#define TEST_DATA_LEN 4
 // Testing data test values
 struct ShockSensorDataOdStruct testData[TEST_DATA_LEN];
 
@@ -116,24 +116,24 @@ int main (void){
 
   // Initialize global variables
   // Configure the controller node array based on which nodes are active
-  // TODO: fix this function. It won't work for more than one controller
-  memset(shockControllerNodes,0x0,sizeof(shockControllerNodes));
-  for(int i = 0; i < NUM_SHOCKS; i++) {
-      if(shockControllerNodes[i].canOpenId != 0 && SHOCK_CONTROLLER_ONE_ID != 0) {
-          shockControllerNodes[i].canOpenId = SHOCK_CONTROLLER_ONE_ID;
-          // Shock controller one is here
-      } else if(shockControllerNodes[i].canOpenId != 0 && SHOCK_CONTROLLER_TWO_ID != 0) {
-          shockControllerNodes[i].canOpenId = SHOCK_CONTROLLER_TWO_ID;
-          // Shock controller two is here
-      } else if(shockControllerNodes[i].canOpenId != 0 && SHOCK_CONTROLLER_THREE_ID != 0) {
-          shockControllerNodes[i].canOpenId = SHOCK_CONTROLLER_THREE_ID;
-          // Shock controller three is here
-      } else if(shockControllerNodes[i].canOpenId != 0 && SHOCK_CONTROLLER_FOUR_ID != 0) {
-          shockControllerNodes[i].canOpenId = SHOCK_CONTROLLER_FOUR_ID;
-          // Shock controller four is here
-      }
-      shockControllerNodes[i].hasNewData = false;
+  uint8_t shockNodesAdded = 0;
+  if(SHOCK_CONTROLLER_ONE_ID != 0) {
+    shockControllerNodes[shockNodesAdded++].canOpenId = SHOCK_CONTROLLER_ONE_ID;
   }
+
+  if(SHOCK_CONTROLLER_TWO_ID != 0) {
+    shockControllerNodes[shockNodesAdded++].canOpenId = SHOCK_CONTROLLER_TWO_ID;
+  }
+
+  if(SHOCK_CONTROLLER_THREE_ID != 0) {
+    shockControllerNodes[shockNodesAdded++].canOpenId = SHOCK_CONTROLLER_THREE_ID;
+  }
+
+  if(SHOCK_CONTROLLER_FOUR_ID != 0) {
+    shockControllerNodes[shockNodesAdded++].canOpenId = SHOCK_CONTROLLER_FOUR_ID;
+  }
+
+
 
   // Create temporary shockDamperProfile
   struct ShockDamperProfile defaultProfile = { 0 };
@@ -278,6 +278,8 @@ int main (void){
         }
 
         /* Nonblocking application code may go here. */
+        // //TODO : Change this code to only set start up complete once
+        // // all the nodes are here
         // if(CO->HBcons->allMonitoredOperational) {
         //   //startUpComplete = true;
         //   //BSP_LED_On(LED2);
@@ -376,6 +378,7 @@ void tmrTask_thread(void){
 
       // Check if there was new sensor data added to the OD
       if(DoesOdContainNewData()) {
+        printf("Got new data\r\n");
         // Copy the data out of the OD
         uint8_t fifoIndex = PushNewDataOntoFifo();
         if(fifoIndex >= 0) {
@@ -384,7 +387,7 @@ void tmrTask_thread(void){
 
         } else {
           // Something went wrong with the data collection
-          CO_errorReport(CO->em,CO_EM_GENERIC_SOFTWARE_ERROR,CO_EMC_SOFTWARE_INTERNAL,0U);
+          //CO_errorReport(CO->em,CO_EM_GENERIC_SOFTWARE_ERROR,CO_EMC_SOFTWARE_INTERNAL,0U);
 
           // Enter into stop mode?
         }
@@ -542,8 +545,6 @@ PUTCHAR_PROTOTYPE
   return len;
 }
 
-
-
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
     if(htim->Instance == TIM6) {
         tmrTask_thread();
@@ -619,6 +620,9 @@ void ShockControllerNMTChange(uint8_t nodeId,uint8_t idx, CO_NMT_internalState_t
   if(state != CO_NMT_INITIALIZING) {
     SetRemoteNodeToOperational(nodeId);
   }
+
+  // TODO: If the node changes from operational to non operational set the active flag
+  // in shockControllerNodes to false;
 }
 
 void ShockControllerHBReceived(uint8_t nodeId, uint8_t idx, void *object) {
@@ -627,6 +631,9 @@ void ShockControllerHBReceived(uint8_t nodeId, uint8_t idx, void *object) {
 
 void ShockControllerHBStopped(uint8_t nodeId, uint8_t idx, void *object) {
   //printf("Shock controller node %d HB stopped\r\n",nodeId);
+  
+  // TODO: If the node changes from operational to non operational set the active flag
+  // in shockControllerNodes to false;
 }
 
 void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan) {
