@@ -21,6 +21,24 @@
 #define USARTx_RX_GPIO_PORT              GPIOA 
 #define USARTx_RX_AF                     GPIO_AF7_USART2
 
+// Definition for UART used for software testing data
+// Tx : PC12 , Rx : PD2
+#define SOFTWARE_TEST_UART                           UART5
+#define SOFTWARE_TEST_UART_CLK_ENABLE()              __HAL_RCC_UART5_CLK_ENABLE();
+#define SOFTWARE_TEST_UART_RX_GPIO_CLK_ENABLE()      __HAL_RCC_GPIOD_CLK_ENABLE()
+#define SOFTWARE_TEST_UART_TX_GPIO_CLK_ENABLE()      __HAL_RCC_GPIOC_CLK_ENABLE() 
+
+#define SOFTWARE_TEST_UART_FORCE_RESET()             __HAL_RCC_UART5_FORCE_RESET()
+#define SOFTWARE_TEST_UART_RELEASE_RESET()           __HAL_RCC_UART5_RELEASE_RESET()
+
+/* Definition for UARTx Pins */
+#define SOFTWARE_TEST_UART_TX_PIN                    GPIO_PIN_12
+#define SOFTWARE_TEST_UART_TX_GPIO_PORT              GPIOC  
+#define SOFTWARE_TEST_UART_TX_AF                     GPIO_AF7_UART5
+#define SOFTWARE_TEST_UART_RX_PIN                    GPIO_PIN_2
+#define SOFTWARE_TEST_UART_RX_GPIO_PORT              GPIOD 
+#define SOFTWARE_TEST_UART_RX_AF                     GPIO_AF7_UART5
+
 /* Definition for CANx clock resources */
 // TX is pb9 , rx is pb8
 #define CANx                           CAN1
