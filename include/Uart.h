@@ -39,4 +39,4 @@ int UART_putStringNL(UART_HandleTypeDef *huart,char *str);
 
 int UART_readData(UART_HandleTypeDef *huart,uint8_t *ptr, uint32_t len);
 
-int UART_readLine(UART_HandleTypeDef *huart,uint8_t *ptr, uint32_t len);
+int UART_readLine(UART_HandleTypeDef *huart,uint8_t *ptr, uint32_t len, char newLine, uint32_t *bytesRead);

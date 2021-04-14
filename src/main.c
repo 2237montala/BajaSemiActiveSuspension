@@ -41,6 +41,7 @@ bool DoAllNodesHaveNewData(struct ShockControllerNodeStatus *nodeArray, uint32_t
 uint8_t DisableCoTimerIrq();
 void EnableCoTimerIrq(uint8_t basePri);
 
+void LoadNewDataIntoFifo();
 void ComputeVelocities(bool firstRun, uint32_t dt);
 void ComputeAllDampingValue(uint32_t dt);
 
@@ -78,6 +79,8 @@ CAN_HandleTypeDef     CanHandle;
 /* debug UART handler declaration */
 UART_HandleTypeDef debugUartHandle;
 
+//UART_HandleTypeDef softwareTestingUartHandle;
+
 #ifdef SOFTWARE_TEST
 #define TEST_DATA_LEN 4
 // Testing data test values
@@ -86,6 +89,7 @@ struct ShockSensorDataOdStruct testData[TEST_DATA_LEN];
 void ST_SetupTestDataArray();
 void ST_LoadNewTestData();
 void ST_PrintControlSystemOutput(struct ShockControlSystem *controlSystems, uint32_t len);
+void ST_LoadNewDataFromUart();
 #endif
 
 
@@ -266,7 +270,7 @@ int main (void){
 
         if(onBoot) {
           // Run some code in the beginning to reset network
-          printf("Reseting all shock controllers\r\n");
+          log_printf("Reseting all shock controllers\r\n");
 
           resetAllNodes(shockControllerNodes,NUM_SHOCKS);
           onBoot = false;
@@ -317,20 +321,23 @@ int main (void){
           // Load in new testing data
           #ifdef SOFTWARE_TEST
           // Print out the time to calculate damping values
-          printf("Time to compute %d damping values: %lu\r\n",
+          log_printf("Time to compute %d damping values: %lu\r\n",
                 NUM_SHOCKS,(controlSystemEndComputeMs - controlSystemStartComputeMs));
 
-          // Print out data to verify
+          // Send computed value back to testing pc
           ST_PrintControlSystemOutput(shockControlSystems,NUM_SHOCKS);
-
-          ST_LoadNewTestData();
           #endif
         }
+
+        #ifdef SOFTWARE_TEST
+          // This is blocking code
+          ST_LoadNewDataFromUart();
+        #endif
 
         /* optional sleep for short time */
     }
 
-    printf("All nodes are ready\r\n");
+    log_printf("All nodes are ready\r\n");
 
     while(reset == CO_RESET_NOT){
       /* loop for normal program execution ******************************************/
@@ -378,19 +385,7 @@ void tmrTask_thread(void){
 
       // Check if there was new sensor data added to the OD
       if(DoesOdContainNewData()) {
-        printf("Got new data\r\n");
-        // Copy the data out of the OD
-        uint8_t fifoIndex = PushNewDataOntoFifo();
-        if(fifoIndex >= 0) {
-          // Notify the main loop that a shock controller sent new data and to process it
-          shockControllerNodes[fifoIndex].hasNewData = true;
-
-        } else {
-          // Something went wrong with the data collection
-          //CO_errorReport(CO->em,CO_EM_GENERIC_SOFTWARE_ERROR,CO_EMC_SOFTWARE_INTERNAL,0U);
-
-          // Enter into stop mode?
-        }
+        LoadNewDataIntoFifo();
       }
 
       /* Further I/O or nonblocking application code may go here. */
@@ -610,13 +605,13 @@ void SetRemoteNodeToOperational(uint8_t nodeId) {
 
 
 void ShockControllerBooted(uint8_t nodeId, uint8_t idx, void *object) {
-  printf("%lu: Shock controller node %d booted\r\n",HAL_GetTick(),nodeId);
+  log_printf("%lu: Shock controller node %d booted\r\n",HAL_GetTick(),nodeId);
   //CO_NMT_sendCommand(CO->NMT,CO_NMT_ENTER_OPERATIONAL,nodeId);
 }
 
 
 void ShockControllerNMTChange(uint8_t nodeId,uint8_t idx, CO_NMT_internalState_t state, void *object) {
-  printf("%lu: Shock controller node %d NMT changed to %d\r\n",HAL_GetTick(),nodeId,state);
+  log_printf("%lu: Shock controller node %d NMT changed to %d\r\n",HAL_GetTick(),nodeId,state);
   if(state != CO_NMT_INITIALIZING) {
     SetRemoteNodeToOperational(nodeId);
   }
@@ -626,11 +621,11 @@ void ShockControllerNMTChange(uint8_t nodeId,uint8_t idx, CO_NMT_internalState_t
 }
 
 void ShockControllerHBReceived(uint8_t nodeId, uint8_t idx, void *object) {
-  //printf("Shock controller node %d HB started\r\n",nodeId);
+  //log_printf("Shock controller node %d HB started\r\n",nodeId);
 }
 
 void ShockControllerHBStopped(uint8_t nodeId, uint8_t idx, void *object) {
-  //printf("Shock controller node %d HB stopped\r\n",nodeId);
+  //log_printf("Shock controller node %d HB stopped\r\n",nodeId);
   
   // TODO: If the node changes from operational to non operational set the active flag
   // in shockControllerNodes to false;
@@ -650,7 +645,7 @@ void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan) {
     CO_errorReset(CO->em,CO_EM_CAN_BUS_WARNING, 0);
   }
 
-  printf("CAN TEC/REC/Error: %d/%d/%lx\r\n", tecErrors,recErrors,errorCode);
+  log_printf("CAN TEC/REC/Error: %d/%d/%lx\r\n", tecErrors,recErrors,errorCode);
 }
 
 bool DoAllNodesHaveNewData(struct ShockControllerNodeStatus *nodeArray, uint32_t arrayLen) {
@@ -681,6 +676,22 @@ void EnableCoTimerIrq(uint8_t basePri) {
   __set_BASEPRI(basePri);
 }
 
+void LoadNewDataIntoFifo() {
+  log_printf("Got new data\r\n");
+  // Copy the data out of the OD
+  uint8_t fifoIndex = PushNewDataOntoFifo();
+  if(fifoIndex >= 0) {
+    // Notify the main loop that a shock controller sent new data and to process it
+    shockControllerNodes[fifoIndex].hasNewData = true;
+
+  } else {
+    // Something went wrong with the data collection
+    //CO_errorReport(CO->em,CO_EM_GENERIC_SOFTWARE_ERROR,CO_EMC_SOFTWARE_INTERNAL,0U);
+
+    // Enter into stop mode?
+  }
+}
+
 void ComputeVelocities(bool firstRun, uint32_t dt) {
   // Disable CO thread interrupt as we will be accessing the data fifos
   // We need to prevent the fifo changing mid calculation
@@ -705,38 +716,53 @@ void ComputeAllDampingValue(uint32_t dt) {
 }
 
 #ifdef SOFTWARE_TEST
-void ST_SetupTestDataArray() {
-  // Set up testing data for the array
-  testData[0].sensorData.linearPos = -0.0000987f;
-
-  testData[1].sensorData.linearPos = -0.000788716f;
-
-  testData[2].sensorData.linearPos = -0.001473792f;
-
-  testData[3].sensorData.linearPos = -0.002152688f;
-
-}
-
-void ST_LoadNewTestData() {
-  static uint32_t dataCounter = 0;
-
-  // Give fake data to run a single test suite
-  if(dataCounter < TEST_DATA_LEN) {
-    uint8_t temp = DisableCoTimerIrq();
-    DataCollectionLoadNewTestValues(testData[dataCounter]);
-    EnableCoTimerIrq(temp);
-    dataCounter++;
-  }
-}
-
 void ST_PrintControlSystemOutput(struct ShockControlSystem *controlSystems, uint32_t len) {
-  // printf("Accels (X,Y,Z)\r\n");
-  // printf("%2.3f,%2.3f,%2.3f\r\n",controlSysUnit.)
+  // Convert each of the shock damping values into byte form to be sent back to testing pc
+  uint8_t dataToSendBackLen = sizeof(float32_t) * NUM_SHOCKS;
+  uint8_t dataToSendBack[dataToSendBackLen];
+
   for(int i = 0; i < len; i++) {
-    printf("Shock %d\r\n",i);
-    printf("Damping value: %2.4f\r\n",controlSystems[i].previousDamperValue);
+    // Convert each shock damping value to bytes and send it
+    UART_putData(&debugUartHandle,&(controlSystems[i].previousDamperValue),sizeof(float32_t));
   }
-  
+
+}
+
+void ST_LoadNewDataFromUart() {
+  // Loads in new data from the UART 
+  // Expects the same amount of data as number of shocks
+  // So if we have 2 shock it expects sensor data for 2 shocks
+  uint32_t uartDataInLen = sizeof(struct ShockSensorDataOdStruct);
+  uint8_t uartDataIn[uartDataInLen];
+
+  for(int i = 0; i < NUM_SHOCKS; i++) {
+    HAL_StatusTypeDef status = UART_readData(&debugUartHandle, uartDataIn,uartDataInLen);
+    if(status == HAL_OK) {
+      // Simulate receiving data though CAN
+      struct ShockSensorDataOdStruct tempData;
+      memcpy(uartDataIn,&tempData,uartDataInLen);
+
+      // Copy the data to the OD 
+      bool success = eDataCollectionLoadNewTestValues(&tempData);
+      if(!success) {
+        // Error copying over data
+      }
+
+      // Move the data out of the OD
+      if(DoesOdContainNewData()) {
+        LoadNewDataIntoFifo();
+      } else {
+        // This function should always return true since we just loaded data into the OD
+        // Unless the data sent was the same which shouldn't happen during testing
+      }
+    } else {
+      // There was some sort of error. Stop the test
+
+    }
+
+  }
+
+
 }
 
 
