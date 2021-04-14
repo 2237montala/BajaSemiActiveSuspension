@@ -79,12 +79,9 @@ CAN_HandleTypeDef     CanHandle;
 /* debug UART handler declaration */
 UART_HandleTypeDef debugUartHandle;
 
-//UART_HandleTypeDef softwareTestingUartHandle;
-
 #ifdef SOFTWARE_TEST
-#define TEST_DATA_LEN 4
-// Testing data test values
-struct ShockSensorDataOdStruct testData[TEST_DATA_LEN];
+#define SOFTWATE_TEST_UART_BAUDRATE 115200
+UART_HandleTypeDef STUartHandle;
 
 void ST_SetupTestDataArray();
 void ST_LoadNewTestData();
@@ -274,11 +271,6 @@ int main (void){
 
           resetAllNodes(shockControllerNodes,NUM_SHOCKS);
           onBoot = false;
-
-          // Give fake data to run a single test suite
-          #ifdef SOFTWARE_TEST
-          ST_LoadNewTestData();
-          #endif
         }
 
         /* Nonblocking application code may go here. */
@@ -313,9 +305,7 @@ int main (void){
         if(!firstSetOfData && dampingValuesReady) {
           // Send the damping values to the shock controllers
           // TODO: Write this function
-
           controlSystemEndComputeMs = HAL_GetTick();
-          log_printf("%lu: New damping values\r\n",HAL_GetTick());
           dampingValuesReady = false;
 
           // Load in new testing data
@@ -716,14 +706,34 @@ void ComputeAllDampingValue(uint32_t dt) {
 }
 
 #ifdef SOFTWARE_TEST
+void ST_SetupUart() {
+  /* UART1 configured as follows:
+      - Word Length = 8 Bits
+      - Stop Bit = One Stop bit
+      - Parity = ODD parity
+      - BaudRate = 9600 baud
+      - Hardware flow control disabled (RTS and CTS signals) */
+  STUartHandle.Instance          = SOFTWARE_TEST_UART;
+  
+  STUartHandle.Init.BaudRate     = SOFTWATE_TEST_UART_BAUDRATE;
+  STUartHandle.Init.WordLength   = UART_WORDLENGTH_8B;
+  STUartHandle.Init.StopBits     = UART_STOPBITS_1;
+  STUartHandle.Init.Parity       = UART_PARITY_NONE;
+  STUartHandle.Init.HwFlowCtl    = UART_HWCONTROL_NONE;
+  STUartHandle.Init.Mode         = UART_MODE_TX_RX;
+  STUartHandle.Init.OverSampling = UART_OVERSAMPLING_16;
+
+  UART_Init(&STUartHandle);
+}
+
 void ST_PrintControlSystemOutput(struct ShockControlSystem *controlSystems, uint32_t len) {
   // Convert each of the shock damping values into byte form to be sent back to testing pc
-  uint8_t dataToSendBackLen = sizeof(float32_t) * NUM_SHOCKS;
-  uint8_t dataToSendBack[dataToSendBackLen];
+  // uint8_t dataToSendBackLen = sizeof(float32_t) * NUM_SHOCKS;
+  // uint8_t dataToSendBack[dataToSendBackLen];
 
   for(int i = 0; i < len; i++) {
     // Convert each shock damping value to bytes and send it
-    UART_putData(&debugUartHandle,&(controlSystems[i].previousDamperValue),sizeof(float32_t));
+    UART_putData(&STUartHandle, (uint8_t *) &(controlSystems[i].previousDamperValue),sizeof(float32_t));
   }
 
 }
@@ -736,14 +746,14 @@ void ST_LoadNewDataFromUart() {
   uint8_t uartDataIn[uartDataInLen];
 
   for(int i = 0; i < NUM_SHOCKS; i++) {
-    HAL_StatusTypeDef status = UART_readData(&debugUartHandle, uartDataIn,uartDataInLen);
+    HAL_StatusTypeDef status = UART_readData(&STUartHandle, uartDataIn,uartDataInLen);
     if(status == HAL_OK) {
       // Simulate receiving data though CAN
       struct ShockSensorDataOdStruct tempData;
       memcpy(uartDataIn,&tempData,uartDataInLen);
 
       // Copy the data to the OD 
-      bool success = eDataCollectionLoadNewTestValues(&tempData);
+      bool success = DataCollectionLoadNewTestValues(&tempData);
       if(!success) {
         // Error copying over data
       }
