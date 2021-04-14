@@ -82,5 +82,5 @@ bool DoesOdContainNewData(void);
 
 
 #ifdef SOFTWARE_TEST
-void DataCollectionLoadNewTestValues();
+bool DataCollectionLoadNewTestValues(struct ShockSensorDataOdStruct *dataToLoad);
 #endif

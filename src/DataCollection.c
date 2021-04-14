@@ -219,7 +219,7 @@ bool DoesOdContainNewData(void) {
 }
 
 #ifdef SOFTWARE_TEST
-void DataCollectionLoadNewTestValues(struct ShockSensorDataOdStruct *dataToLoad) {
+bool DataCollectionLoadNewTestValues(struct ShockSensorDataOdStruct *dataToLoad) {
   if(accelDataMapping.odDataPtr == NULL) {
     // Something went wrong with getting the data pointer, shouldn't be null
     return false;
@@ -237,5 +237,7 @@ void DataCollectionLoadNewTestValues(struct ShockSensorDataOdStruct *dataToLoad)
   // Copy the data over from array to od
   memcpy(statusMapping.odDataPtr,&(dataToLoad->sensorData.inFreefall),
          statusMapping.dataLengthInBytes);
+
+  return true;
 }
 #endif
