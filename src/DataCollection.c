@@ -14,8 +14,6 @@ uint32_t shockControllerOneIndex, shockControllerTwoIndex, shockControllerThreeI
 struct ShockSensorDataOdStruct lastOdSensorData;
 
 // Private functions ----------------------------------------------------------------------------
-static bool FillOdMapping(CO_SDO_t *SDO, struct VariableToOdMappingStruct *mappingStruct, 
-                          uint32_t odIndexToMap);
 static int GetFifoIndexFromId(uint8_t id);
 
 // Start of functions ---------------------------------------------------------------------------

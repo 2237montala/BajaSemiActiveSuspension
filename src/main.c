@@ -53,6 +53,7 @@ void SetupShockControllerNodeMappings();
 void LoadNewDataIntoFifo();
 void ComputeVelocities(bool firstRun, uint32_t dt);
 void ComputeAllDampingValue(uint32_t dt);
+void LoadNewDampingValuesToOD(struct ShockControllerNodes *nodes, uint32_t len);
 
 
 
@@ -322,6 +323,7 @@ int main (void){
           dampingValuesReady = false;
 
           // Copy the new damping values to the OD
+          LoadNewDampingValuesToOD(shockControllerNodes,NUM_SHOCKS);
 
           // Load in new testing data
           #ifdef SOFTWARE_TEST
@@ -720,11 +722,12 @@ void ComputeAllDampingValue(uint32_t dt) {
 void LoadNewDampingValuesToOD(struct ShockControllerNodes *nodes, uint32_t len) {
   // for each shock load it new damping value into the TPDO
   for(int i = 0; i < len; i++) {
-    float32_t dampingValue = nodes[i].controlSystem.previousDamperValue;
-    uint8_t canId = nodes[i].status.canOpenId;
-
     // Copy data to OD
+    memcpy(&(nodes[i].controlSystem.previousDamperValue),
+           nodes[i].dampingValueMapping.odDataPtr,nodes[i].dampingValueMapping.dataLengthInBytes);
 
+    memcpy(&(nodes[i].status.canOpenId),
+           nodes[i].canIdMapping.odDataPtr,nodes[i].canIdMapping.dataLengthInBytes);
   }
 }
 
