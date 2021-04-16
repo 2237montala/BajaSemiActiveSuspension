@@ -35,6 +35,21 @@
 
    typedef domain_t     DOMAIN;
 
+#ifndef timeOfDay_t
+    typedef union {
+        unsigned long long ullValue;
+        struct {
+            unsigned long ms:28;
+            unsigned reserved:4;
+            unsigned days:16;
+            unsigned reserved2:16;
+        };
+    }timeOfDay_t;
+#endif
+
+    typedef timeOfDay_t TIME_OF_DAY;
+    typedef timeOfDay_t TIME_DIFFERENCE;
+
 
 /*******************************************************************************
    FILE INFO:
@@ -69,9 +84,6 @@
   #define CO_NO_TPDO                     4   //Associated objects: 18xx, 1Axx
   #define CO_NO_NMT_MASTER               0
 
-#define CO_NO_TIME 0
-   #define CO_NO_GFC 0
-   #define CO_NO_SRDO 0
 
 /*******************************************************************************
    OBJECT DICTIONARY
