@@ -22,7 +22,7 @@ static int GetFifoIndexFromId(uint8_t id);
 
 bool DataCollectionInit(CO_t *CO, uint32_t shockSensorAccelOdIndex,
                         uint32_t shockSensorStatusOdIndex, uint32_t shockSensorRpwOdIndex,
-                        uint32_t shockSensorIdOdIndex, uint32_t shockSnesorPositionIndex) {
+                        uint32_t shockSensorIdOdIndex, uint32_t shockSensorPositionIndex) {
 
     // Initialize some variables
     memset(&lastOdSensorData,0x0,sizeof(lastOdSensorData));
@@ -70,7 +70,7 @@ bool DataCollectionInit(CO_t *CO, uint32_t shockSensorAccelOdIndex,
       return false;
     }
 
-    noError = FillOdMapping(CO->SDO[0], &shockPosDataMapping,shockSnesorPositionIndex);
+    noError = FillOdMapping(CO->SDO[0], &shockPosDataMapping,shockSensorPositionIndex);
     if(!noError) {
       return false;
     }

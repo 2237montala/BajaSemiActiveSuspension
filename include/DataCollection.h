@@ -44,7 +44,7 @@ struct ShockSensorDataOdStruct {
  */
 bool DataCollectionInit(CO_t *CO, uint32_t shockSensorAccelOdIndex,
                         uint32_t shockSensorStatusOdIndex, uint32_t shockSensorRpwOdIndex,
-                        uint32_t shockSensorIdOdIndex, uint32_t shockSnesorPositionIndex);
+                        uint32_t shockSensorIdOdIndex, uint32_t shockSensorPositionIndex);
 
 /*
  * PURPOSE
