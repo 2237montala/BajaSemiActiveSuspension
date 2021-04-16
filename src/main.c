@@ -13,11 +13,20 @@
   #include "CANopen.h"
 #endif
 
+
+
 // Struct definitions 
 struct ShockControllerNodeStatus {
   uint8_t canOpenId;
   bool isActive;
   bool hasNewData;
+};
+
+struct ShockControllerNodes {
+  struct ShockControllerNodeStatus status;
+  struct ShockControlSystem controlSystem;
+  struct VariableToOdMappingStruct dampingValueMapping;
+  struct VariableToOdMappingStruct canIdMapping;
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -31,12 +40,12 @@ void ShockControllerHBReceived(uint8_t nodeId, uint8_t idx, void *object);
 void ShockControllerHBStopped(uint8_t nodeId, uint8_t idx, void *object);
 
 void enableHBCallBacksForAllNodes(uint8_t numNodes);
-void resetAllNodes(struct ShockControllerNodeStatus *nodes, uint8_t numNodes);
-void enableHBForAllNodes(struct ShockControllerNodeStatus *nodes, uint8_t numNodes);
+void resetAllNodes(struct ShockControllerNodes *nodes, uint8_t numNodes);
+void enableHBForAllNodes(struct ShockControllerNodes *nodes, uint8_t numNodes);
 
 // Private functions for control system
 void createInitialDamperProfiles();
-bool DoAllNodesHaveNewData(struct ShockControllerNodeStatus *nodeArray, uint32_t arrayLen);
+bool DoAllNodesHaveNewData(struct ShockControllerNodes *nodeArray, uint32_t arrayLen);
 
 uint8_t DisableCoTimerIrq();
 void EnableCoTimerIrq(uint8_t basePri);
@@ -59,10 +68,12 @@ TIM_HandleTypeDef msTimer = {.Instance = TIM6};
 #define TMR_TASK_INTERVAL_MS (TMR_TASK_INTERVAL/1000)
 #define INCREMENT_1MS(var)  (var++)         /* Increment 1ms variable in tmrTask */
 
-struct ShockControllerNodeStatus shockControllerNodes[NUM_SHOCKS];
+// struct ShockControllerNodeStatus shockControllerNodes[NUM_SHOCKS];
 
-// Create a shock control system struct to be used
-struct ShockControlSystem shockControlSystems[NUM_SHOCKS]; 
+// // Create a shock control system struct to be used
+// struct ShockControlSystem shockControlSystems[NUM_SHOCKS]; 
+
+struct ShockControllerNodes shockControllerNodes[NUM_SHOCKS];
 
 // LED values and pins
 #define GREEN_LED_PIN D8
@@ -85,7 +96,7 @@ UART_HandleTypeDef STUartHandle;
 
 void ST_SetupTestDataArray();
 void ST_LoadNewTestData();
-void ST_PrintControlSystemOutput(struct ShockControlSystem *controlSystems, uint32_t len);
+void ST_PrintControlSystemOutput(struct ShockControllerNodes *nodes, uint32_t len);
 void ST_LoadNewDataFromUart();
 #endif
 
@@ -119,19 +130,19 @@ int main (void){
   // Configure the controller node array based on which nodes are active
   uint8_t shockNodesAdded = 0;
   if(SHOCK_CONTROLLER_ONE_ID != 0) {
-    shockControllerNodes[shockNodesAdded++].canOpenId = SHOCK_CONTROLLER_ONE_ID;
+    shockControllerNodes[shockNodesAdded++].status.canOpenId = SHOCK_CONTROLLER_ONE_ID;
   }
 
   if(SHOCK_CONTROLLER_TWO_ID != 0) {
-    shockControllerNodes[shockNodesAdded++].canOpenId = SHOCK_CONTROLLER_TWO_ID;
+    shockControllerNodes[shockNodesAdded++].status.canOpenId = SHOCK_CONTROLLER_TWO_ID;
   }
 
   if(SHOCK_CONTROLLER_THREE_ID != 0) {
-    shockControllerNodes[shockNodesAdded++].canOpenId = SHOCK_CONTROLLER_THREE_ID;
+    shockControllerNodes[shockNodesAdded++].status.canOpenId = SHOCK_CONTROLLER_THREE_ID;
   }
 
   if(SHOCK_CONTROLLER_FOUR_ID != 0) {
-    shockControllerNodes[shockNodesAdded++].canOpenId = SHOCK_CONTROLLER_FOUR_ID;
+    shockControllerNodes[shockNodesAdded++].status.canOpenId = SHOCK_CONTROLLER_FOUR_ID;
   }
 
 
@@ -186,10 +197,14 @@ int main (void){
 
     // Set up the data collection functions
     DataCollectionInit(CO,OD_6000_readShockAccel,OD_6050_readShockAccelStatus,
-                     OD_6100_readAccelRPY,OD_6060_readShockDataSenderID);
+                     OD_6100_readAccelRPY,OD_6060_readShockDataSenderID,OD_6150_readShockPosition);
 
     // Set up the control system
-    ControlSystemInit(shockControlSystems,NUM_SHOCKS,defaultProfile);
+    struct ShockControlSystem tempControlSysArr[NUM_SHOCKS];
+    for(int i = 0; i < NUM_SHOCKS; i++) {
+      tempControlSysArr[i] = shockControllerNodes[i].controlSystem;
+    }
+    ControlSystemInit(tempControlSysArr,NUM_SHOCKS,defaultProfile);
 
     /* Configure Timer interrupt function for execution every 1 millisecond */
 
@@ -317,7 +332,7 @@ int main (void){
                 NUM_SHOCKS,(controlSystemEndComputeMs - controlSystemStartComputeMs));
 
           // Send computed value back to testing pc
-          ST_PrintControlSystemOutput(shockControlSystems,NUM_SHOCKS);
+          ST_PrintControlSystemOutput(shockControllerNodes,NUM_SHOCKS);
           #endif
         }
 
@@ -538,16 +553,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
     }
 }
 
-void resetAllNodes(struct ShockControllerNodeStatus *nodes, uint8_t numNodes) {
+void resetAllNodes(struct ShockControllerNodes *nodes, uint8_t numNodes) {
   for(uint8_t i = 0; i < numNodes; i++) {
-    CO_NMT_sendCommand(CO->NMT,CO_NMT_RESET_NODE,nodes[i].canOpenId);
+    CO_NMT_sendCommand(CO->NMT,CO_NMT_RESET_NODE,nodes[i].status.canOpenId);
   }
 }
 
-void enableHBForAllNodes(struct ShockControllerNodeStatus *nodes, uint8_t numNodes)
+void enableHBForAllNodes(struct ShockControllerNodes *nodes, uint8_t numNodes)
 {
   for(uint8_t i = 0; i < numNodes; i++) {
-    uint32_t temp = nodes[i].canOpenId << 16U;
+    uint32_t temp = nodes[i].status.canOpenId << 16U;
       temp |= SHOCK_CONTROLLER_HEARTBEAT_INTERVAL + SHOCK_CONTROLLER_HEARTBEAT_INTERVAL_OFFSET;
       OD_consumerHeartbeatTime[i] = temp;
   }
@@ -640,11 +655,11 @@ void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan) {
   log_printf("CAN TEC/REC/Error: %d/%d/%lx\r\n", tecErrors,recErrors,errorCode);
 }
 
-bool DoAllNodesHaveNewData(struct ShockControllerNodeStatus *nodeArray, uint32_t arrayLen) {
+bool DoAllNodesHaveNewData(struct ShockControllerNodes *nodeArray, uint32_t arrayLen) {
   uint32_t i = 0;
   uint32_t newDataCount = 0;
   while(i < arrayLen) {
-    if(nodeArray[i].hasNewData) {
+    if(nodeArray[i].status.hasNewData) {
       newDataCount++;
     }
     i++;
@@ -674,7 +689,7 @@ void LoadNewDataIntoFifo() {
   uint8_t fifoIndex = PushNewDataOntoFifo();
   if(fifoIndex >= 0) {
     // Notify the main loop that a shock controller sent new data and to process it
-    shockControllerNodes[fifoIndex].hasNewData = true;
+    shockControllerNodes[fifoIndex].status.hasNewData = true;
 
   } else {
     // Something went wrong with the data collection
@@ -703,14 +718,18 @@ void ComputeVelocities(bool firstRun, uint32_t dt) {
 void ComputeAllDampingValue(uint32_t dt) {
   for(int i = 0; i < NUM_SHOCKS; i++) {
     ControlSystemShockData_t shockData = DataProcessingGetNewestData(i);
-    ControlSystemComputeDampingValue(&(shockControlSystems[i]),&shockData,dt);
+    ControlSystemComputeDampingValue(&(shockControllerNodes[i].controlSystem),&shockData,dt);
   }
 }
 
-void LoadNewDampingValuesToOD(struct ShockControlSystem *shockControlSysem, uint32_t len) {
+void LoadNewDampingValuesToOD(struct ShockControllerNodes *nodes, uint32_t len) {
   // for each shock load it new damping value into the TPDO
   for(int i = 0; i < len; i++) {
-    
+    float32_t dampingValue = nodes[i].controlSystem.previousDamperValue;
+    uint8_t canId = nodes[i].status.canOpenId;
+
+    // Copy data to OD
+
   }
 }
 
@@ -735,14 +754,14 @@ void ST_SetupUart() {
   UART_Init(&STUartHandle);
 }
 
-void ST_PrintControlSystemOutput(struct ShockControlSystem *controlSystems, uint32_t len) {
+void ST_PrintControlSystemOutput(struct ShockControllerNodes *nodes, uint32_t len) {
   // Convert each of the shock damping values into byte form to be sent back to testing pc
   // uint8_t dataToSendBackLen = sizeof(float32_t) * NUM_SHOCKS;
   // uint8_t dataToSendBack[dataToSendBackLen];
 
   for(int i = 0; i < len; i++) {
     // Convert each shock damping value to bytes and send it
-    UART_putData(&STUartHandle, (uint8_t *) &(controlSystems[i].previousDamperValue),sizeof(float32_t));
+    UART_putData(&STUartHandle, (uint8_t *) &(nodes[i].controlSystem.previousDamperValue),sizeof(float32_t));
   }
 
 }

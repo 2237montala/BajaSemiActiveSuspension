@@ -88,7 +88,7 @@
 /*******************************************************************************
    OBJECT DICTIONARY
 *******************************************************************************/
-   #define CO_OD_NoOfElements             51
+   #define CO_OD_NoOfElements             52
 
 
 /*******************************************************************************
@@ -491,6 +491,15 @@
 /*6530 */
         #define OD_6530_sendShock4Damping                           0x6530
 
+/*6540 */
+        #define OD_6540_sendConnectedShockIDs                       0x6540
+
+        #define OD_6540_0_sendConnectedShockIDs_maxSubIndex         0
+        #define OD_6540_1_sendConnectedShockIDs_shock1ID            1
+        #define OD_6540_2_sendConnectedShockIDs_shock2ID            2
+        #define OD_6540_3_sendConnectedShockIDs_shock3ID            3
+        #define OD_6540_4_sendConnectedShockIDs_shock4ID            4
+
 /*******************************************************************************
    STRUCTURES FOR VARIABLES IN DIFFERENT MEMORY LOCATIONS
 *******************************************************************************/
@@ -547,6 +556,7 @@ struct sCO_OD_RAM{
 /*6510      */ REAL32          sendShock2Damping;
 /*6520      */ REAL32          sendShock3Damping;
 /*6530      */ REAL32          sendShock4Damping;
+/*6540      */ UNSIGNED8       sendConnectedShockIDs[4];
 
                UNSIGNED32     LastWord;
 };
@@ -712,6 +722,14 @@ extern struct sCO_OD_EEPROM CO_OD_EEPROM;
 
 /*6530, Data Type: REAL32 */
         #define OD_sendShock4Damping                                CO_OD_RAM.sendShock4Damping
+
+/*6540, Data Type: UNSIGNED8, Array[4] */
+        #define OD_sendConnectedShockIDs                            CO_OD_RAM.sendConnectedShockIDs
+        #define ODL_sendConnectedShockIDs_arrayLength               4
+        #define ODA_sendConnectedShockIDs_shock1ID                  0
+        #define ODA_sendConnectedShockIDs_shock2ID                  1
+        #define ODA_sendConnectedShockIDs_shock3ID                  2
+        #define ODA_sendConnectedShockIDs_shock4ID                  3
 
 #endif
 // clang-format on
