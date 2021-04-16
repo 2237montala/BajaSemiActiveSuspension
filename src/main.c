@@ -49,7 +49,7 @@ bool DoAllNodesHaveNewData(struct ShockControllerNodes *nodeArray, uint32_t arra
 
 uint8_t DisableCoTimerIrq();
 void EnableCoTimerIrq(uint8_t basePri);
-
+void SetupShockControllerNodeMappings();
 void LoadNewDataIntoFifo();
 void ComputeVelocities(bool firstRun, uint32_t dt);
 void ComputeAllDampingValue(uint32_t dt);
@@ -67,11 +67,6 @@ TIM_HandleTypeDef msTimer = {.Instance = TIM6};
 #define TMR_TASK_INTERVAL   (1000)          /* Interval of tmrTask thread in microseconds */
 #define TMR_TASK_INTERVAL_MS (TMR_TASK_INTERVAL/1000)
 #define INCREMENT_1MS(var)  (var++)         /* Increment 1ms variable in tmrTask */
-
-// struct ShockControllerNodeStatus shockControllerNodes[NUM_SHOCKS];
-
-// // Create a shock control system struct to be used
-// struct ShockControlSystem shockControlSystems[NUM_SHOCKS]; 
 
 struct ShockControllerNodes shockControllerNodes[NUM_SHOCKS];
 
@@ -194,6 +189,9 @@ int main (void){
         log_printf("Error: CANopen initialization failed: %d\r\n", err);
         return 0;
     }
+
+    // Map the node array damping values to the OD
+    SetupShockControllerNodeMappings();
 
     // Set up the data collection functions
     DataCollectionInit(CO,OD_6000_readShockAccel,OD_6050_readShockAccelStatus,
@@ -609,13 +607,10 @@ void SetRemoteNodeToOperational(uint8_t nodeId) {
   // }
 }
 
-
-
 void ShockControllerBooted(uint8_t nodeId, uint8_t idx, void *object) {
   log_printf("%lu: Shock controller node %d booted\r\n",HAL_GetTick(),nodeId);
   //CO_NMT_sendCommand(CO->NMT,CO_NMT_ENTER_OPERATIONAL,nodeId);
 }
-
 
 void ShockControllerNMTChange(uint8_t nodeId,uint8_t idx, CO_NMT_internalState_t state, void *object) {
   log_printf("%lu: Shock controller node %d NMT changed to %d\r\n",HAL_GetTick(),nodeId,state);
@@ -730,6 +725,63 @@ void LoadNewDampingValuesToOD(struct ShockControllerNodes *nodes, uint32_t len) 
 
     // Copy data to OD
 
+  }
+}
+
+void SetupShockControllerNodeMappings() {
+  // Get the data mapping from local structure to OD for sending out damping values
+  FillOdMapping(CO->SDO[0],&(shockControllerNodes[0].dampingValueMapping),OD_6500_sendShock1Damping);
+
+  #if NUM_SHOCKS > 1
+  FillOdMapping(CO->SDO[0],&(shockControllerNodes[1].dampingValueMapping),OD_6510_sendShock2Damping);
+  #endif
+  #if NUM_SHOCKS > 2
+  FillOdMapping(CO->SDO[0],&(shockControllerNodes[2].dampingValueMapping),OD_6520_sendShock3Damping);
+  #endif
+  #if NUM_SHOCKS > 3
+  FillOdMapping(CO->SDO[0],&(shockControllerNodes[3].dampingValueMapping),OD_6530_sendShock4Damping);
+  #endif
+
+  // Get the mapping for the shock controller can Ids
+  struct VariableToOdMappingStruct canIdMapping;
+  FillOdMapping(CO->SDO[0],&canIdMapping,OD_6540_sendConnectedShockIDs);
+
+  // From the array of CAN ids assign each one an ID from the config file
+  uint8_t shockNodesAdded = 0;
+  if(SHOCK_CONTROLLER_ONE_ID != 0) {
+    shockControllerNodes[shockNodesAdded].canIdMapping.odDataPtr = canIdMapping.odDataPtr;
+    shockControllerNodes[shockNodesAdded].canIdMapping.dataLengthInBytes = sizeof(uint8_t);
+    
+    // Each time we add assign a node a OD index we move the pointer up one
+    canIdMapping.odDataPtr++;
+    shockNodesAdded++; // Move which index we are at
+  }
+
+  if(SHOCK_CONTROLLER_TWO_ID != 0) {
+    shockControllerNodes[shockNodesAdded].canIdMapping.odDataPtr = canIdMapping.odDataPtr;
+    shockControllerNodes[shockNodesAdded].canIdMapping.dataLengthInBytes = sizeof(uint8_t);
+    
+    // Each time we add assign a node a OD index we move the pointer up one
+    canIdMapping.odDataPtr++;
+    shockNodesAdded++; // Move which index we are at
+  }
+
+  if(SHOCK_CONTROLLER_THREE_ID != 0) {
+    shockControllerNodes[shockNodesAdded].canIdMapping.odDataPtr = canIdMapping.odDataPtr;
+    shockControllerNodes[shockNodesAdded].canIdMapping.dataLengthInBytes = sizeof(uint8_t);
+    
+    // Each time we add assign a node a OD index we move the pointer up one
+    canIdMapping.odDataPtr++;
+    shockNodesAdded++; // Move which index we are at
+  }
+
+  if(SHOCK_CONTROLLER_FOUR_ID != 0) {
+    shockControllerNodes[shockNodesAdded].canIdMapping.odDataPtr = canIdMapping.odDataPtr;
+    shockControllerNodes[shockNodesAdded].canIdMapping.dataLengthInBytes = sizeof(uint8_t);
+    
+    // Each time we add assign a node a OD index we move the pointer up one
+    canIdMapping.odDataPtr++;
+    shockNodesAdded++; // Move which index we are at
   }
 }
 

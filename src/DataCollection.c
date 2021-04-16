@@ -143,7 +143,7 @@ bool CopyShockDataFromOD(struct ShockSensorDataOdStruct *shockOdData) {
   return true;
 }
 
-static bool FillOdMapping(CO_SDO_t *SDO, struct VariableToOdMappingStruct *mappingStruct, uint32_t odIndexToMap) {
+bool FillOdMapping(CO_SDO_t *SDO, struct VariableToOdMappingStruct *mappingStruct, uint32_t odIndexToMap) {
   if(SDO == NULL || mappingStruct == NULL || odIndexToMap == 0xFFFF) {
     return false;  
   }

@@ -81,6 +81,8 @@ bool CopyShockDataFromOD(struct ShockSensorDataOdStruct *shockOdData);
  */
 bool DoesOdContainNewData(void);
 
+bool FillOdMapping(CO_SDO_t *SDO, struct VariableToOdMappingStruct *mappingStruct, uint32_t odIndexToMap);
+
 
 #ifdef SOFTWARE_TEST
 bool DataCollectionLoadNewTestValues(struct ShockSensorDataOdStruct *dataToLoad);
