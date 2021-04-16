@@ -3,6 +3,7 @@
 
 // Global stucts to hold mapping from variables to OD data
 struct VariableToOdMappingStruct accelDataMapping;
+struct VariableToOdMappingStruct shockPosDataMapping;
 struct VariableToOdMappingStruct rpyDataMapping;
 struct VariableToOdMappingStruct statusMapping;
 struct VariableToOdMappingStruct idMapping;
@@ -21,7 +22,7 @@ static int GetFifoIndexFromId(uint8_t id);
 
 bool DataCollectionInit(CO_t *CO, uint32_t shockSensorAccelOdIndex,
                         uint32_t shockSensorStatusOdIndex, uint32_t shockSensorRpwOdIndex,
-                        uint32_t shockSensorIdOdIndex) {
+                        uint32_t shockSensorIdOdIndex, uint32_t shockSnesorPositionIndex) {
 
     // Initialize some variables
     memset(&lastOdSensorData,0x0,sizeof(lastOdSensorData));
@@ -65,6 +66,11 @@ bool DataCollectionInit(CO_t *CO, uint32_t shockSensorAccelOdIndex,
     }
 
     noError = FillOdMapping(CO->SDO[0], &idMapping,shockSensorIdOdIndex);
+    if(!noError) {
+      return false;
+    }
+
+    noError = FillOdMapping(CO->SDO[0], &shockPosDataMapping,shockSnesorPositionIndex);
     if(!noError) {
       return false;
     }
@@ -130,6 +136,9 @@ bool CopyShockDataFromOD(struct ShockSensorDataOdStruct *shockOdData) {
 
 
   // TODO: Add roll pitch and yaw
+
+  // Copy over shock position data
+
 
   return true;
 }
@@ -237,6 +246,10 @@ bool DataCollectionLoadNewTestValues(struct ShockSensorDataOdStruct *dataToLoad)
   // Copy the data over from array to od
   memcpy(statusMapping.odDataPtr,&(dataToLoad->sensorData.inFreefall),
          statusMapping.dataLengthInBytes);
+
+  // Copy over shock position data to od
+  memcpy(shockPosDataMapping.odDataPtr,&(dataToLoad->sensorData.linearPos),
+         shockPosDataMapping.dataLengthInBytes);
 
   return true;
 }

@@ -308,6 +308,8 @@ int main (void){
           controlSystemEndComputeMs = HAL_GetTick();
           dampingValuesReady = false;
 
+          // Copy the new damping values to the OD
+
           // Load in new testing data
           #ifdef SOFTWARE_TEST
           // Print out the time to calculate damping values
@@ -705,6 +707,13 @@ void ComputeAllDampingValue(uint32_t dt) {
   }
 }
 
+void LoadNewDampingValuesToOD(struct ShockControlSystem *shockControlSysem, uint32_t len) {
+  // for each shock load it new damping value into the TPDO
+  for(int i = 0; i < len; i++) {
+    
+  }
+}
+
 #ifdef SOFTWARE_TEST
 void ST_SetupUart() {
   /* UART1 configured as follows:
@@ -771,8 +780,6 @@ void ST_LoadNewDataFromUart() {
     }
 
   }
-
-
 }
 
 

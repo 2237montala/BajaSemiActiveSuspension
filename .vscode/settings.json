@@ -8,6 +8,7 @@
         "fifofast.h": "c",
         "canopen.h": "c",
         "dataprocessing.h": "c",
-        "targetspecific.h": "c"
+        "targetspecific.h": "c",
+        "datacollection.h": "c"
     }
 }
