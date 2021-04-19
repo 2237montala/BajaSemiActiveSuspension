@@ -65,4 +65,4 @@
 #define DX_VELOCTIY_AXIS X_INDEX
 
 // Uncomment this define to enable software testing mode
-#define SOFTWARE_TEST
+//#define SOFTWARE_TEST

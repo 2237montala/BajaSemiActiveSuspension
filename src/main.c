@@ -94,6 +94,8 @@ void ST_SetupTestDataArray();
 void ST_LoadNewTestData();
 void ST_PrintControlSystemOutput(struct ShockControllerNodes *nodes, uint32_t len);
 bool ST_LoadNewDataFromUart(uint32_t *simulationDtInMs);
+uint32_t controlSystemStartComputeMs = 0;
+uint32_t controlSystemEndComputeMs = 0;
 #endif
 
 
@@ -266,9 +268,6 @@ int main (void){
     uint32_t lastVelocityComputeMs = 0;
     uint32_t controlSystemDt = HAL_GetTick();
 
-    uint32_t controlSystemStartComputeMs = 0;
-    uint32_t controlSystemEndComputeMs = 0;
-
     while(reset == CO_RESET_NOT && !startUpComplete){
         timer1msCopy = CO_timer1ms;
         timer1msDiff = timer1msCopy - timer1msPrevious;
@@ -304,7 +303,9 @@ int main (void){
         // Calculate velocites based on previous data
         // Check if all the nodes have new data
         if(DoAllNodesHaveNewData(shockControllerNodes,NUM_SHOCKS)) {
+          #ifdef SOFTWARE_TEST
           controlSystemStartComputeMs = HAL_GetTick();
+          #endif
           // If we are not testing the software then compute the dt based on the current
           // system time. Otherwise we have to send the dt from the test script
           #ifndef SOFTWARE_TEST
@@ -328,7 +329,9 @@ int main (void){
         if(dampingValuesReady) {
           // Send the damping values to the shock controllers
           // TODO: Write this function
+          #ifdef SOFTWARE_TEST
           controlSystemEndComputeMs = HAL_GetTick();
+          #endif
           dampingValuesReady = false;
           firstSetOfData = false;
 
