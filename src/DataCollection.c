@@ -109,9 +109,9 @@ bool CopyShockDataFromOD(struct ShockSensorDataOdStruct *shockOdData) {
     return false;
   }
 
-  uint8_t *tempId = (uint8_t *)idMapping.odDataPtr; 
+  // uint8_t *tempId = (uint8_t *)idMapping.odDataPtr; 
 
-  shockOdData->senderCanId = *tempId;
+  // shockOdData->senderCanId = *tempId;
 
   if(accelDataMapping.odDataPtr == NULL) {
     // Something went wrong with getting the data pointer, shouldn't be null
@@ -136,7 +136,20 @@ bool CopyShockDataFromOD(struct ShockSensorDataOdStruct *shockOdData) {
   // TODO: Add roll pitch and yaw
 
   // Copy over shock position data
+  if(shockPosDataMapping.odDataPtr == NULL) {
+    return false;
+  }
 
+  memcpy(&(shockOdData->sensorData.linearPos),shockPosDataMapping.odDataPtr,
+         shockPosDataMapping.dataLengthInBytes);
+
+  // Copy over the sender ID
+  if(idMapping.odDataPtr == NULL) {
+    return false;
+  }
+
+  memcpy(&(shockOdData->senderCanId),idMapping.odDataPtr,
+         idMapping.dataLengthInBytes);
 
   return true;
 }
@@ -246,8 +259,23 @@ bool DataCollectionLoadNewTestValues(struct ShockSensorDataOdStruct *dataToLoad)
          statusMapping.dataLengthInBytes);
 
   // Copy over shock position data to od
+  if(shockPosDataMapping.odDataPtr == NULL) {
+    return false;
+  }
+
   memcpy(shockPosDataMapping.odDataPtr,&(dataToLoad->sensorData.linearPos),
          shockPosDataMapping.dataLengthInBytes);
+
+
+  // TODO: Copy over roll pitch and yaw
+
+  // Copy over the sender ID
+  if(idMapping.odDataPtr == NULL) {
+    return false;
+  }
+
+  memcpy(idMapping.odDataPtr,&(dataToLoad->senderCanId),
+         idMapping.dataLengthInBytes);
 
   return true;
 }

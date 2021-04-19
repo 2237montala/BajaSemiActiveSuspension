@@ -18,5 +18,7 @@ int DataProcessingComputeVelocities(bool firstRun, uint32_t dt);
 int DataProcessingComputeVelocity(ControlSystemShockData_t *dataToBeStored, uint32_t fifoIndex,
                                   uint32_t dt, bool firstRun);
 
-ControlSystemShockData_t DataProcessingGetNewestData(uint32_t index);
+ControlSystemShockData_t DataProcessingGetFifoHead(uint32_t index);
+
+void DataProcessingRemoveFifoHead(uint32_t index);
 

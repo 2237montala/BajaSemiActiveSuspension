@@ -52,7 +52,7 @@ void EnableCoTimerIrq(uint8_t basePri);
 void SetupShockControllerNodeMappings();
 void LoadNewDataIntoFifo();
 void ComputeVelocities(bool firstRun, uint32_t dt);
-void ComputeAllDampingValue(uint32_t dt);
+void ComputeAllDampingValue(bool firstRun, uint32_t dt);
 void LoadNewDampingValuesToOD(struct ShockControllerNodes *nodes, uint32_t len);
 
 
@@ -89,11 +89,11 @@ UART_HandleTypeDef debugUartHandle;
 #ifdef SOFTWARE_TEST
 #define SOFTWATE_TEST_UART_BAUDRATE 115200
 UART_HandleTypeDef STUartHandle;
-
+void ST_SetupUart();
 void ST_SetupTestDataArray();
 void ST_LoadNewTestData();
 void ST_PrintControlSystemOutput(struct ShockControllerNodes *nodes, uint32_t len);
-void ST_LoadNewDataFromUart();
+bool ST_LoadNewDataFromUart(uint32_t *simulationDtInMs);
 #endif
 
 
@@ -114,6 +114,10 @@ int setup() {
   BspGpioInitOutput(GREEN_LED_PIN);
   BspGpioInitOutput(RED_LED_PIN);
   BspGpioInitOutput(DEBUG_GPIO_PIN);
+
+  #ifdef SOFTWARE_TEST
+  ST_SetupUart();
+  #endif
 
   return 0;
 }
@@ -199,9 +203,9 @@ int main (void){
                      OD_6100_readAccelRPY,OD_6060_readShockDataSenderID,OD_6150_readShockPosition);
 
     // Set up the control system
-    struct ShockControlSystem tempControlSysArr[NUM_SHOCKS];
+    struct ShockControlSystem *tempControlSysArr[NUM_SHOCKS];
     for(int i = 0; i < NUM_SHOCKS; i++) {
-      tempControlSysArr[i] = shockControllerNodes[i].controlSystem;
+      tempControlSysArr[i] = &(shockControllerNodes[i].controlSystem);
     }
     ControlSystemInit(tempControlSysArr,NUM_SHOCKS,defaultProfile);
 
@@ -237,8 +241,9 @@ int main (void){
     HAL_TIM_Base_Init(&msTimer);
 
     // Enable interrupts for timer
+    #ifndef SOFTWARE_TEST
     HAL_TIM_Base_Start_IT(&msTimer);
-
+    #endif
     // Set up callbacks for certain functions
     enableHBCallBacksForAllNodes(NUM_SHOCKS);
 
@@ -259,7 +264,7 @@ int main (void){
     bool newVelocityData = false;
     bool dampingValuesReady = false;
     uint32_t lastVelocityComputeMs = 0;
-    uint32_t controlSystemDt = 0;
+    uint32_t controlSystemDt = HAL_GetTick();
 
     uint32_t controlSystemStartComputeMs = 0;
     uint32_t controlSystemEndComputeMs = 0;
@@ -285,6 +290,7 @@ int main (void){
 
           resetAllNodes(shockControllerNodes,NUM_SHOCKS);
           onBoot = false;
+          log_printf("Ready\r\n");
         }
 
         /* Nonblocking application code may go here. */
@@ -299,16 +305,19 @@ int main (void){
         // Check if all the nodes have new data
         if(DoAllNodesHaveNewData(shockControllerNodes,NUM_SHOCKS)) {
           controlSystemStartComputeMs = HAL_GetTick();
-          uint32_t controlSystemDt = (HAL_GetTick() - lastVelocityComputeMs);
+          // If we are not testing the software then compute the dt based on the current
+          // system time. Otherwise we have to send the dt from the test script
+          #ifndef SOFTWARE_TEST
+          controlSystemDt = (HAL_GetTick() - lastVelocityComputeMs);
+          #endif
           ComputeVelocities(firstSetOfData,controlSystemDt);
           
-          firstSetOfData = false;
           newVelocityData = true;
         }
 
         // Run the control system if we have new data
-        if(!firstSetOfData && newVelocityData) {
-          ComputeAllDampingValue(controlSystemDt);
+        if(newVelocityData) {
+          ComputeAllDampingValue(firstSetOfData,controlSystemDt);
 
           // Reset state
           newVelocityData = false;
@@ -316,11 +325,12 @@ int main (void){
         }
 
         // If we have new damping values then send those values out
-        if(!firstSetOfData && dampingValuesReady) {
+        if(dampingValuesReady) {
           // Send the damping values to the shock controllers
           // TODO: Write this function
           controlSystemEndComputeMs = HAL_GetTick();
           dampingValuesReady = false;
+          firstSetOfData = false;
 
           // Copy the new damping values to the OD
           LoadNewDampingValuesToOD(shockControllerNodes,NUM_SHOCKS);
@@ -338,7 +348,9 @@ int main (void){
 
         #ifdef SOFTWARE_TEST
           // This is blocking code
-          ST_LoadNewDataFromUart();
+          // Send a ready command to let the software know we are ready for new data
+          UART_putString(&STUartHandle,"rdy");
+          ST_LoadNewDataFromUart(&controlSystemDt);
         #endif
 
         /* optional sleep for short time */
@@ -712,10 +724,17 @@ void ComputeVelocities(bool firstRun, uint32_t dt) {
   EnableCoTimerIrq(oldBasePri);
 }
 
-void ComputeAllDampingValue(uint32_t dt) {
+void ComputeAllDampingValue(bool firstRun, uint32_t dt) {
   for(int i = 0; i < NUM_SHOCKS; i++) {
-    ControlSystemShockData_t shockData = DataProcessingGetNewestData(i);
+    // We want to remove the old value after the velocity was calculated becuase it uses the previous value
+    // This function will only delete if there is more than 1 item in the fifo
+    if(!firstRun) {
+      DataProcessingRemoveFifoHead(i);
+    }
+    
+    ControlSystemShockData_t shockData = DataProcessingGetFifoHead(i);
     ControlSystemComputeDampingValue(&(shockControllerNodes[i].controlSystem),&shockData,dt);
+    
   }
 }
 
@@ -723,11 +742,13 @@ void LoadNewDampingValuesToOD(struct ShockControllerNodes *nodes, uint32_t len) 
   // for each shock load it new damping value into the TPDO
   for(int i = 0; i < len; i++) {
     // Copy data to OD
-    memcpy(&(nodes[i].controlSystem.previousDamperValue),
-           nodes[i].dampingValueMapping.odDataPtr,nodes[i].dampingValueMapping.dataLengthInBytes);
+    memcpy(nodes[i].dampingValueMapping.odDataPtr,
+           &(nodes[i].controlSystem.previousDamperValue),
+           nodes[i].dampingValueMapping.dataLengthInBytes);
 
-    memcpy(&(nodes[i].status.canOpenId),
-           nodes[i].canIdMapping.odDataPtr,nodes[i].canIdMapping.dataLengthInBytes);
+    memcpy(nodes[i].canIdMapping.odDataPtr,
+           &(nodes[i].status.canOpenId),
+           nodes[i].canIdMapping.dataLengthInBytes);
   }
 }
 
@@ -751,36 +772,52 @@ void SetupShockControllerNodeMappings() {
 
   // From the array of CAN ids assign each one an ID from the config file
   uint8_t shockNodesAdded = 0;
-  if(SHOCK_CONTROLLER_ONE_ID != 0) {
+  if(SHOCK_CONTROLLER_ONE_ID > 0) {
     shockControllerNodes[shockNodesAdded].canIdMapping.odDataPtr = canIdMapping.odDataPtr;
     shockControllerNodes[shockNodesAdded].canIdMapping.dataLengthInBytes = sizeof(uint8_t);
+
+    // Assign fill the OD with the CAN ID
+    memcpy(shockControllerNodes[shockNodesAdded].canIdMapping.odDataPtr,
+           &(shockControllerNodes[shockNodesAdded].status.canOpenId),sizeof(uint8_t));
     
     // Each time we add assign a node a OD index we move the pointer up one
     canIdMapping.odDataPtr++;
     shockNodesAdded++; // Move which index we are at
   }
 
-  if(SHOCK_CONTROLLER_TWO_ID != 0) {
+  if(SHOCK_CONTROLLER_TWO_ID > 0) {
     shockControllerNodes[shockNodesAdded].canIdMapping.odDataPtr = canIdMapping.odDataPtr;
     shockControllerNodes[shockNodesAdded].canIdMapping.dataLengthInBytes = sizeof(uint8_t);
+
+    // Assign fill the OD with the CAN ID
+    memcpy(shockControllerNodes[shockNodesAdded].canIdMapping.odDataPtr,
+           &(shockControllerNodes[shockNodesAdded].status.canOpenId),sizeof(uint8_t));
     
     // Each time we add assign a node a OD index we move the pointer up one
     canIdMapping.odDataPtr++;
     shockNodesAdded++; // Move which index we are at
   }
 
-  if(SHOCK_CONTROLLER_THREE_ID != 0) {
+  if(SHOCK_CONTROLLER_THREE_ID > 0) {
     shockControllerNodes[shockNodesAdded].canIdMapping.odDataPtr = canIdMapping.odDataPtr;
     shockControllerNodes[shockNodesAdded].canIdMapping.dataLengthInBytes = sizeof(uint8_t);
+
+    // Assign fill the OD with the CAN ID
+    memcpy(shockControllerNodes[shockNodesAdded].canIdMapping.odDataPtr,
+           &(shockControllerNodes[shockNodesAdded].status.canOpenId),sizeof(uint8_t));
     
     // Each time we add assign a node a OD index we move the pointer up one
     canIdMapping.odDataPtr++;
     shockNodesAdded++; // Move which index we are at
   }
 
-  if(SHOCK_CONTROLLER_FOUR_ID != 0) {
+  if(SHOCK_CONTROLLER_FOUR_ID > 0) {
     shockControllerNodes[shockNodesAdded].canIdMapping.odDataPtr = canIdMapping.odDataPtr;
     shockControllerNodes[shockNodesAdded].canIdMapping.dataLengthInBytes = sizeof(uint8_t);
+
+    // Assign fill the OD with the CAN ID
+    memcpy(shockControllerNodes[shockNodesAdded].canIdMapping.odDataPtr,
+           &(shockControllerNodes[shockNodesAdded].status.canOpenId),sizeof(uint8_t));
     
     // Each time we add assign a node a OD index we move the pointer up one
     canIdMapping.odDataPtr++;
@@ -821,39 +858,91 @@ void ST_PrintControlSystemOutput(struct ShockControllerNodes *nodes, uint32_t le
 
 }
 
-void ST_LoadNewDataFromUart() {
+bool ST_LoadNewDataFromUart(uint32_t *simulationDtInMs) {
   // Loads in new data from the UART 
   // Expects the same amount of data as number of shocks
   // So if we have 2 shock it expects sensor data for 2 shocks
   uint32_t uartDataInLen = sizeof(struct ShockSensorDataOdStruct);
   uint8_t uartDataIn[uartDataInLen];
+  memset(uartDataIn,0x0,uartDataInLen);
 
-  for(int i = 0; i < NUM_SHOCKS; i++) {
-    HAL_StatusTypeDef status = UART_readData(&STUartHandle, uartDataIn,uartDataInLen);
-    if(status == HAL_OK) {
-      // Simulate receiving data though CAN
-      struct ShockSensorDataOdStruct tempData;
-      memcpy(uartDataIn,&tempData,uartDataInLen);
+  int completedTransfers = 0;
+  if(simulationDtInMs != NULL) {
+    bool error = false;
+    // Read in the delta t for the computations
+    HAL_StatusTypeDef status = UART_readData(&STUartHandle, uartDataIn, sizeof(uint32_t));
 
-      // Copy the data to the OD 
-      bool success = DataCollectionLoadNewTestValues(&tempData);
-      if(!success) {
-        // Error copying over data
-      }
-
-      // Move the data out of the OD
-      if(DoesOdContainNewData()) {
-        LoadNewDataIntoFifo();
-      } else {
-        // This function should always return true since we just loaded data into the OD
-        // Unless the data sent was the same which shouldn't happen during testing
-      }
+    if(!error && status == HAL_OK) {
+      // Read enough data to make 3 float32s
+      memcpy(simulationDtInMs,uartDataIn,sizeof(uint32_t));
     } else {
-      // There was some sort of error. Stop the test
-
+      error = true;
     }
+    
+    for(int i = 0; i < NUM_SHOCKS; i++) {
+      // Read in the accels
+      struct ShockSensorDataOdStruct tempData = {0};
 
+      status = UART_readData(&STUartHandle, uartDataIn, sizeof(float32_t)*NUMBER_OF_AXIS);
+
+      if(!error && status == HAL_OK) {
+        // Read enough data to make 3 float32s
+        memcpy(tempData.sensorData.accels,uartDataIn,sizeof(float32_t)*NUMBER_OF_AXIS);
+      } else {
+        error = true;
+      }
+
+      // Read in shock len
+      status = UART_readData(&STUartHandle, uartDataIn,sizeof(float32_t)); 
+
+      if(!error && status == HAL_OK) {
+        // Read enough data to make 3 float32s
+        memcpy(&(tempData.sensorData.linearPos),uartDataIn,sizeof(float32_t));
+      } else {
+        error = true;
+      }
+
+      // Read in freefall
+      status = UART_readData(&STUartHandle, uartDataIn,sizeof(uint8_t)); 
+
+      if(!error && status == HAL_OK) {
+        // Read enough data to make 3 float32s
+        memcpy(&(tempData.sensorData.inFreefall),uartDataIn,sizeof(uint8_t));
+      } else {
+        error = true;
+      }
+
+      // Read in canId
+      status = UART_readData(&STUartHandle, uartDataIn,sizeof(uint8_t)); 
+
+      if(!error && status == HAL_OK) {
+        // Read enough data to make 3 float32s
+        memcpy(&(tempData.senderCanId),uartDataIn,sizeof(uint8_t));
+      } else {
+        error = true;
+      }
+
+      if(!error) {
+        // Copy the data to the OD 
+        bool success = DataCollectionLoadNewTestValues(&tempData);
+        if(!success) {
+          // Error copying over data
+        }
+
+        // Move the data out of the OD
+        if(DoesOdContainNewData()) {
+          //UART_putStringNL(&debugUartHandle,"Got data");
+          LoadNewDataIntoFifo();
+          completedTransfers++;
+        } else {
+          // This function should always return true since we just loaded data into the OD
+          // Unless the data sent was the same which shouldn't happen during testing
+        }
+      }   
+    }
   }
+
+  return completedTransfers > 0;
 }
 
 

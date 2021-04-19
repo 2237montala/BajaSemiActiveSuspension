@@ -77,9 +77,12 @@ int DataProcessingComputeVelocity(ControlSystemShockData_t *dataToBeStored, uint
         dataToBeStored->dLinearPos = computeVelocityFromDisp(0.0f,sensorData.linearPos,dt);
     } else {
         // Compute velocity with previous values
-        ControlSystemShockData_t prevControlSysData = 
-            _fff_peek(CONTROL_SYSTEM_SHOCK_DATA_FIFO_NAME[fifoIndex],
-                    _fff_mem_level(CONTROL_SYSTEM_SHOCK_DATA_FIFO_NAME[fifoIndex]));
+        // ControlSystemShockData_t prevControlSysData = 
+        //     _fff_peek(CONTROL_SYSTEM_SHOCK_DATA_FIFO_NAME[fifoIndex],
+        //             (_fff_mem_level(CONTROL_SYSTEM_SHOCK_DATA_FIFO_NAME[fifoIndex])-1));
+
+        // Get the head of the data
+        ControlSystemShockData_t prevControlSysData = _fff_peek(CONTROL_SYSTEM_SHOCK_DATA_FIFO_NAME[fifoIndex],0);
 
         dataToBeStored->dx = computeVelocityFromAccel(prevControlSysData.dx,
                                             prevControlSysData.rawData.accels[DX_VELOCTIY_AXIS],
@@ -88,9 +91,9 @@ int DataProcessingComputeVelocity(ControlSystemShockData_t *dataToBeStored, uint
                                             prevControlSysData.rawData.accels[DY_VELOCITY_AXIS],
                                             sensorData.accels[DY_VELOCITY_AXIS]);
 
-        dataToBeStored->dLinearPos = computeVelocityFromDisp(prevControlSysData.dLinearPos,
-                                                            prevControlSysData.rawData.linearPos,
-                                                            sensorData.linearPos);
+        dataToBeStored->dLinearPos = computeVelocityFromDisp(prevControlSysData.rawData.linearPos,
+                                                            sensorData.linearPos,
+                                                            dt);
     }
 
     // Save the old data to the previous data field of the new data
@@ -100,13 +103,19 @@ int DataProcessingComputeVelocity(ControlSystemShockData_t *dataToBeStored, uint
     return 0;
 }
 
-ControlSystemShockData_t DataProcessingGetNewestData(uint32_t index) {
+ControlSystemShockData_t DataProcessingGetFifoHead(uint32_t index) {
     return _fff_peek(CONTROL_SYSTEM_SHOCK_DATA_FIFO_NAME[index],0);
+}
+
+void DataProcessingRemoveFifoHead(uint32_t index) {
+    if(!_fff_is_empty(CONTROL_SYSTEM_SHOCK_DATA_FIFO_NAME[index])) {
+        _fff_remove(CONTROL_SYSTEM_SHOCK_DATA_FIFO_NAME[index],1);
+    }
 }
 
 static float32_t computeVelocityFromAccel(float32_t v1, float32_t a1, float32_t a2) {
     // Simple approximation of acceleration integration
-    return v1 * ((a1 + a2)/2);
+    return v1 + ((a1 + a2)/2);
 }
 
 static float32_t computeVelocityFromDisp(float32_t d1, float32_t d2, uint32_t deltaT) {

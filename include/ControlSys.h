@@ -32,7 +32,7 @@ struct ShockControlSystem {
  * RETURNS
  *      None
  */
-void ControlSystemInit(struct ShockControlSystem *shockControlSystem, int numShocks,
+void ControlSystemInit(struct ShockControlSystem **shockControlSystem, int numShocks,
                        struct ShockDamperProfile startingCoefs);
 
 /*

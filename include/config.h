@@ -61,7 +61,8 @@
 // How many previous acceleration values will be used to calcuate the new velocity in the same axis
 //#define NUM_PREVIOUS_ACCELS_PER_INTEGRATION 1
 
-#define DY_VELOCITY_AXIS Y_INDEX
+#define DY_VELOCITY_AXIS Z_INDEX
 #define DX_VELOCTIY_AXIS X_INDEX
 
+// Uncomment this define to enable software testing mode
 #define SOFTWARE_TEST

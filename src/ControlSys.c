@@ -44,15 +44,15 @@ static float32_t clamp(float32_t value, float32_t max, float32_t min);
 static void calculateDampingValue(struct ShockControlSystem *shockControlSystemUnit, 
                            float32_t dx, float32_t dy, uint32_t dt);
 
-void ControlSystemInit(struct ShockControlSystem *shockControlSystem, int numShocks,
+void ControlSystemInit(struct ShockControlSystem **shockControlSystem, int numShocks,
                        struct ShockDamperProfile startingCoefs) {
     calculateControlSystemParameters();
 
     // Set up all the PID controllers
     for(int i = 0; i < numShocks; i++) {
-        PidInstanceInitF32(&(shockControlSystem[i].shockPidController));
+        PidInstanceInitF32(&(shockControlSystem[i]->shockPidController));
 
-        PidInstanceSetParamsF32(&(shockControlSystem[i].shockPidController), 
+        PidInstanceSetParamsF32(&(shockControlSystem[i]->shockPidController), 
                                 startingCoefs.PID_P,
                                 startingCoefs.PID_I,
                                 startingCoefs.PID_D);
