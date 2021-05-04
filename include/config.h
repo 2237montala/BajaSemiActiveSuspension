@@ -22,8 +22,8 @@
 #define CONTROL_SYSTEM_ZETA_MIN 0.75f
 #define CONTROL_SYSTEM_ZETA_MAX 4.0f
 
-#define CONTROL_SPRING_K 40000.0f
-#define CONTROL_SYSTEM_MASS_QUARTER_CAR 80.0f
+#define CONTROL_SPRING_K 27000.0f
+#define CONTROL_SYSTEM_MASS_QUARTER_CAR 68.0f
 
 // PID parameters
 #define PID_P_NORMAL 0.7f
@@ -65,4 +65,4 @@
 #define DX_VELOCTIY_AXIS X_INDEX
 
 // Uncomment this define to enable software testing mode
-//#define SOFTWARE_TEST
+#define SOFTWARE_TEST
